@@ -6,12 +6,7 @@ import React, {
   useEffect,
 } from "react";
 
-import {
-  createNewClient,
-  getClientById,
-  getClients,
-  updateClientById,
-} from "../../services/ClientService";
+import { getClients } from "../../services/ClientService";
 
 const initialState = {
   clients: [],
@@ -102,16 +97,15 @@ export const ClientsProvider = ({ children }) => {
 
     try {
       const { page, limit } = state.pagination;
-      const { filter, sort } = state;
-      const data = await getClients({ page, limit, filter, sort });
-      console.log(data); // <- este console log muestra correctamente el array de items, con una estructura [items[], page, totalItems, totalPages]
+      const { filters, sort } = state;
+      const data = await getClients({ page, limit, filters, sort });
 
       dispatch({
         type: ACTION_TYPES.FETCH_CLIENTS_SUCCESS,
         payload: data,
       });
     } catch (error) {
-      dispatch({ type: ACTION_TYPES.FETCH_ERROR });
+      dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
     }
   }, [
     state.pagination.page,
@@ -120,58 +114,25 @@ export const ClientsProvider = ({ children }) => {
     state.sort,
   ]);
 
-  const fetchClientById = useCallback(async (id) => {
-    dispatch({ type: ACTION_TYPES.FETCH_START });
-    try {
-      const data = await getClientById(id);
-      dispatch({
-        type: ACTION_TYPES.FETCH_CLIENT_SUCCESS,
-        payload: { client: data },
-      });
-    } catch (error) {
-      dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
-    }
+  const setPage = useCallback((page) => {
+    dispatch({ type: ACTION_TYPES.SET_PAGE, payload: page });
   }, []);
 
-  const addClient = useCallback(
-    async (clientData) => {
-      dispatch({ type: ACTION_TYPES.FETCH_START });
-      try {
-        await createNewClient(clientData);
-        dispatch({ type: ACTION_TYPES.ACTION_SUCCESS });
-        fetchClients();
-      } catch (error) {
-        dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
-        throw error;
-      }
-    },
-    [fetchClients]
-  );
-
-  const updateClient = useCallback(
-    async (id, clientData) => {
-      dispatch({ type: ACTION_TYPES.FETCH_START });
-      try {
-        await updateClientById(id, clientData);
-        dispatch({ type: ACTION_TYPES.ACTION_SUCCESS });
-        fetchClients();
-      } catch (error) {
-        dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
-        throw error;
-      }
-    },
-    [fetchClients]
-  );
-
-  const setPage = (page) =>
-    dispatch({ type: ACTION_TYPES.SET_PAGE, payload: page });
-  const setLimit = (limit) =>
+  const setLimit = useCallback((limit) => {
     dispatch({ type: ACTION_TYPES.SET_LIMIT, payload: limit });
-  const setFilters = (filters) =>
-    dispatch({ type: ACTION_TYPES.SET_FILTERS, payload: filters });
-  const setSort = (sort) =>
+  }, []);
+
+  const setSort = useCallback((sort) => {
     dispatch({ type: ACTION_TYPES.SET_SORT, payload: sort });
-  const clearError = () => dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
+  }, []);
+
+  const setFilters = useCallback((filters) => {
+    dispatch({ type: ACTION_TYPES.SET_FILTERS, payload: filters });
+  }, []);
+
+  const clearError = useCallback(() => {
+    dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
+  }, []);
 
   useEffect(() => {
     fetchClients();
@@ -180,9 +141,6 @@ export const ClientsProvider = ({ children }) => {
   const value = {
     ...state,
     fetchClients,
-    fetchClientById,
-    addClient,
-    updateClient,
     setPage,
     setLimit,
     setFilters,
