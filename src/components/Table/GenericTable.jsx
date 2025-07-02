@@ -10,6 +10,7 @@ import {
   Typography,
   TablePagination,
   TableSortLabel,
+  Box,
 } from "@mui/material";
 import Loading from "../UI/Loading";
 
@@ -33,9 +34,9 @@ export const GenericTable = ({
   };
 
   return (
-    <Paper sx={{ width: "100%", overflow: "hidden", position: "relative" }}>
+    <Paper>
       {loading && Loading}
-      <TableContainer>
+      <TableContainer sx={{ width: "100%" }}>
         <Table stickyHeader aria-label="generic table">
           <TableHead>
             <TableRow>

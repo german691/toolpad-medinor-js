@@ -1,8 +1,16 @@
-import { Box, Typography } from "@mui/material";
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  Button,
+  IconButton,
+  Typography,
+} from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { ClientsProvider, useClients } from "../hooks/context/useClients";
 import { useEffect } from "react";
 import { GenericTable } from "../components/Table/GenericTable";
+import { Close } from "@mui/icons-material";
 
 export function ClientsPage() {
   const {
@@ -36,13 +44,6 @@ export function ClientsPage() {
       align: "center",
     },
     {
-      accessor: "must_change_password",
-      header: "Cambiar Contraseña",
-      sortable: true,
-      render: (row) => (row.must_change_password ? "Sí" : "No"),
-      align: "center",
-    },
-    {
       accessor: "createdAt",
       header: "Fecha de Creación",
       sortable: true,
@@ -69,24 +70,7 @@ export function ClientsPage() {
 
   return (
     <PageContainer maxWidth={false}>
-      <Typography variant="body1" color="text.secondary">
-        Alta, Baja y Modificación de Clientes.
-      </Typography>
-      <Box sx={{ p: 4, maxWidth: "1200px", margin: "auto" }}>
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-          sx={{
-            mb: 4,
-            textAlign: "center",
-            fontWeight: "bold",
-            color: "#333",
-          }}
-        >
-          Gestión de Clientes
-        </Typography>
-
+      <>
         <GenericTable
           data={clients}
           columns={columns}
@@ -100,37 +84,26 @@ export function ClientsPage() {
         />
 
         {error && (
-          <Box
-            sx={{
-              mt: 2,
-              p: 2,
-              backgroundColor: "#ffebee",
-              color: "#d32f2f",
-              borderRadius: "8px",
-              border: "1px solid #ef9a9a",
-            }}
+          <Alert
+            severity="error"
+            action={
+              <IconButton
+                aria-label="close"
+                color="inherit"
+                size="small"
+                onClick={clearError}
+              >
+                <Close fontSize="inherit" />
+              </IconButton>
+            }
           >
-            <Typography variant="body1">
-              Error:{" "}
-              {error.message ||
+            <AlertTitle>
+              {error?.message ||
                 "Ocurrió un error inesperado al cargar los clientes."}
-            </Typography>
-            <button
-              onClick={clearError}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#d32f2f",
-                textDecoration: "underline",
-                cursor: "pointer",
-                marginTop: "8px",
-              }}
-            >
-              Cerrar
-            </button>
-          </Box>
+            </AlertTitle>
+          </Alert>
         )}
-      </Box>
+      </>
     </PageContainer>
   );
 }
