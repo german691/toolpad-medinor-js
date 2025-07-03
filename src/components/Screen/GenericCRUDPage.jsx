@@ -6,6 +6,7 @@ import {
   Button,
   IconButton,
   Stack,
+  Tooltip,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useCRUD } from "../../hooks/context/useCRUD";
@@ -34,12 +35,11 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
     clearError,
   } = useCRUD();
 
-  /* Manejo de pantalla completa
-   */
+  /* Manejo de pantalla completa */
   const [isFullScreen, setIsFullScreen] = useState(false);
   const handleToggleFullScreen = () => setIsFullScreen((prev) => !prev);
 
-  // estados para edición de fila
+  /* Manejo de pantalla completa */
   const [hasChanges, setHasChanges] = useState(false);
   const [modifiedRows, setModifiedRows] = useState({});
 
@@ -80,25 +80,40 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
       }}
     >
       <Stack direction="row" spacing={2}>
-        <IconButton onClick={fetchItems}>
-          <Refresh />
-        </IconButton>
-        <IconButton onClick={handleToggleFullScreen}>
-          {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
-        </IconButton>
-        <IconButton
-          onClick={handleDataGridCancelChanges}
-          disabled={!hasChanges}
-        >
-          <Cancel />
-        </IconButton>
-        <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
-          <Save />
-        </IconButton>
+        {/* Actualizar */}
+        <Tooltip title="Actualizar" arrow text="">
+          <IconButton onClick={fetchItems}>
+            <Refresh />
+          </IconButton>
+        </Tooltip>
+        {/* Pantalla completa */}
+        <Tooltip title="Pantalla completa" arrow text="">
+          <IconButton onClick={handleToggleFullScreen}>
+            {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
+          </IconButton>
+        </Tooltip>
+        {/* Cancelar edición */}
+        <Tooltip title="Cancelar" arrow text="">
+          <IconButton
+            onClick={handleDataGridCancelChanges}
+            disabled={!hasChanges}
+          >
+            <Cancel />
+          </IconButton>
+        </Tooltip>
+        {/* Guardar cambios */}
+        <Tooltip title="Guardar cambios" arrow text="">
+          <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
+            <Save />
+          </IconButton>
+        </Tooltip>
+        {/* Buscador */}
       </Stack>
-      <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
-        Crear {entityName}
-      </Button>
+      <Stack direction="row" spacing={2}>
+        <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
+          Crear {entityName}
+        </Button>
+      </Stack>
     </Box>
   );
 
