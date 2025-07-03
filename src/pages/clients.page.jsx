@@ -1,5 +1,8 @@
+import React, { useState } from "react";
+import ClientCreateDialog from "../components/Dialog/ClientCreateDialog";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 import { ClientsProvider } from "../hooks/context/clientWrapper";
+import { createNewClient } from "../services/clientService";
 
 const clientColumns = [
   {
@@ -26,8 +29,9 @@ const clientColumns = [
   {
     accessor: "active",
     header: "Activo",
+    type: "boolean",
     minWidth: 100,
-    render: (row) => (row.active ? "Sí" : "No"),
+    align: "center",
   },
   {
     accessor: "createdAt",
@@ -38,21 +42,40 @@ const clientColumns = [
 ];
 
 export function ClientsPage() {
+  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+
   const handleAddClient = () => {
-    console.log("Abrir modal para crear nuevo cliente...");
+    setCreateDialogOpen(true);
+  };
+
+  const handleSaveClient = async (clientData) => {
+    try {
+      console.log("Enviando datos para crear cliente:", clientData);
+      await createNewClient(clientData);
+    } catch (error) {
+      console.error("Falló la creación del cliente desde la página", error);
+      throw error;
+    }
   };
 
   const handleSaveChanges = () => {
-    console.log("Guardando cambios...");
+    setCreateDialogOpen(false);
   };
 
   return (
-    <GenericCRUDPage
-      columns={clientColumns}
-      entityName="cliente"
-      onAdd={handleAddClient}
-      onSave={handleSaveChanges}
-    />
+    <React.Fragment>
+      <GenericCRUDPage
+        columns={clientColumns}
+        entityName="cliente"
+        onAdd={handleAddClient}
+        onSave={handleSaveChanges}
+      />
+      <ClientCreateDialog
+        open={isCreateDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSave={handleSaveClient}
+      />
+    </React.Fragment>
   );
 }
 

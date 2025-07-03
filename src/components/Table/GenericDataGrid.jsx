@@ -37,7 +37,7 @@ export const GenericDataGrid = ({
         align: col.align || "left",
         headerAlign: col.align || "left",
         renderCell: col.render ? (params) => col.render(params.row) : undefined,
-
+        type: col.type,
         width: col.width,
         minWidth: col.minWidth,
         flex: col.flex,
