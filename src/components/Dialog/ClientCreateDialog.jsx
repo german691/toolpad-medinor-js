@@ -10,6 +10,8 @@ import {
   FormControlLabel,
   Checkbox,
   Box,
+  Alert,
+  AlertTitle,
 } from "@mui/material";
 import PropTypes from "prop-types";
 import { Info } from "@mui/icons-material";
@@ -26,41 +28,51 @@ const initialFormState = {
 export default function ClientCreateDialog({ open, onClose, onSave }) {
   const [formData, setFormData] = useState(initialFormState);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!open) {
       setFormData(initialFormState);
+      setError(null);
     }
   }, [open]);
 
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
+
   const handleInputChange = (e) => {
+    if (error) setError(null);
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e) => {
+    if (error) setError(null);
     const { checked } = e.target;
     setFormData((prev) => ({ ...prev, active: checked }));
   };
 
   const handleSaveClick = async () => {
     setIsSaving(true);
+    setError(null);
     try {
       await onSave(formData);
-      onClose();
-    } catch (error) {
-      console.error("Error al guardar el cliente:", error);
+      handleClose();
+    } catch (err) {
+      console.error("Error al guardar el cliente:", err);
+      setError(err.message || "Ocurrió un error inesperado.");
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle
         sx={{
           display: "flex",
-          flexDirection: "row",
           justifyContent: "space-between",
           opacity: "85%",
         }}
@@ -70,19 +82,18 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
           title="Sé cuidadoso: Los clientes creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único cliente."
           arrow
         >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-            }}
-          >
-            <Info color="action" fontSize="small" />
-          </span>
+          <Info color="action" fontSize="small" />
         </Tooltip>
       </DialogTitle>
       <DialogContent
         sx={{ display: "flex", my: 2, flexDirection: "column", gap: 1 }}
       >
+        {error && (
+          <Alert severity="error" onClose={() => setError(null)}>
+            <AlertTitle>Error al guardar</AlertTitle>
+            {error}
+          </Alert>
+        )}
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
           <TextField
             autoFocus
@@ -105,7 +116,6 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
           />
         </Box>
         <TextField
-          autoFocus
           margin="dense"
           name="razon_soci"
           label="Razón Social"
@@ -132,7 +142,6 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
           value={formData.password}
           onChange={handleInputChange}
         />
-
         <FormControlLabel
           control={
             <Checkbox
@@ -144,7 +153,7 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={isSaving}>
+        <Button onClick={handleClose} disabled={isSaving}>
           Cancelar
         </Button>
         <Button
