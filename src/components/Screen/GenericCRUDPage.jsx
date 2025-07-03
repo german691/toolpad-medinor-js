@@ -93,20 +93,20 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
           </IconButton>
         </Tooltip>
         {/* Cancelar edición */}
-        <Tooltip title="Cancelar" arrow text="">
-          <IconButton
-            onClick={handleDataGridCancelChanges}
-            disabled={!hasChanges}
-          >
+        <IconButton
+          onClick={handleDataGridCancelChanges}
+          disabled={!hasChanges}
+        >
+          <Tooltip title="Cancelar" arrow text="">
             <Cancel />
-          </IconButton>
-        </Tooltip>
+          </Tooltip>
+        </IconButton>
         {/* Guardar cambios */}
-        <Tooltip title="Guardar cambios" arrow text="">
-          <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
+        <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
+          <Tooltip title="Guardar cambios" arrow text="">
             <Save />
-          </IconButton>
-        </Tooltip>
+          </Tooltip>
+        </IconButton>
         {/* Buscador */}
       </Stack>
       <Stack direction="row" spacing={2}>
