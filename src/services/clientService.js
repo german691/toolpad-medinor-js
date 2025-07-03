@@ -53,7 +53,7 @@ export const getClientById = async (id) => {
 export const createNewClient = async (clientData) => {
   try {
     const response = await api.post("/clients/add", clientData);
-    return response.data;
+    return response;
   } catch (error) {
     handleServiceError(error);
   }
@@ -61,8 +61,18 @@ export const createNewClient = async (clientData) => {
 
 export const updateClientById = async (id, clientData) => {
   try {
-    const response = await api.put(`/clients/get/${id}`, clientData);
-    return response.data;
+    const response = await api.put(`/clients/update/${id}`, clientData);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const bulkUpdateClients = async (clientData) => {
+  try {
+    console.log("datos impresos desde services: ", clientData);
+    const response = await api.put("/clients/update", clientData);
+    return response;
   } catch (error) {
     handleServiceError(error);
   }

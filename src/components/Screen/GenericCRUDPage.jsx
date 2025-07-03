@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Alert,
   AlertTitle,
@@ -20,13 +20,7 @@ import {
 } from "@mui/icons-material";
 import { GenericDataGrid } from "../Table/GenericDataGrid";
 
-export function GenericCRUDPage({
-  columns,
-  entityName,
-  onAdd,
-  onSave,
-  onCancel,
-}) {
+export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
   const {
     items,
     pagination,
@@ -40,9 +34,42 @@ export function GenericCRUDPage({
     clearError,
   } = useCRUD();
 
+  /* Manejo de pantalla completa
+   */
   const [isFullScreen, setIsFullScreen] = useState(false);
-
   const handleToggleFullScreen = () => setIsFullScreen((prev) => !prev);
+
+  // estados para edición de fila
+  const [hasChanges, setHasChanges] = useState(false);
+  const [modifiedRows, setModifiedRows] = useState({});
+
+  const handleDataGridCancelChanges = useCallback(() => {
+    setHasChanges(false);
+    setModifiedRows({});
+  });
+
+  const handleDataGridEditChange = useCallback((newRow, oldRow) => {
+    const hasRowChanged = JSON.stringify(newRow) !== JSON.stringify(oldRow);
+    if (hasRowChanged) {
+      setHasChanges(true);
+      setModifiedRows((prevModifiedRows) => ({
+        ...prevModifiedRows,
+        [newRow._id]: newRow,
+      }));
+    }
+  }, []);
+
+  const handleSaveWrapper = useCallback(async () => {
+    if (onUpdate) {
+      console.log(
+        "datos impresos desde wrapper: ",
+        Object.values(modifiedRows)
+      );
+      onUpdate(Object.values(modifiedRows));
+      setHasChanges(false);
+      setModifiedRows({});
+    }
+  }, [onUpdate, modifiedRows]);
 
   const ToolbarButtons = () => (
     <Box
@@ -59,29 +86,19 @@ export function GenericCRUDPage({
         <IconButton onClick={handleToggleFullScreen}>
           {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
         </IconButton>
+        <IconButton
+          onClick={handleDataGridCancelChanges}
+          disabled={!hasChanges}
+        >
+          <Cancel />
+        </IconButton>
+        <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
+          <Save />
+        </IconButton>
       </Stack>
-      <Stack direction="row" spacing={2}>
-        {onCancel && (
-          <Button variant="outlined" startIcon={<Cancel />} onClick={onCancel}>
-            Cancelar Edición
-          </Button>
-        )}
-        {onSave && (
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<Save />}
-            onClick={onSave}
-          >
-            Guardar Cambios
-          </Button>
-        )}
-        {onAdd && (
-          <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
-            Crear {entityName}
-          </Button>
-        )}
-      </Stack>
+      <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
+        Crear {entityName}
+      </Button>
     </Box>
   );
 
@@ -122,6 +139,8 @@ export function GenericCRUDPage({
           sort={sort}
           onSortChange={setSort}
           isFullScreen={isFullScreen}
+          // el handler para que actúe al editar
+          onEditChange={handleDataGridEditChange}
         />
         {error && (
           <Alert

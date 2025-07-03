@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Box, Paper, Typography, CircularProgress } from "@mui/material";
 
@@ -27,6 +27,7 @@ export const GenericDataGrid = ({
   sort,
   onSortChange,
   isFullScreen,
+  onEditChange,
 }) => {
   const gridColumns = React.useMemo(
     () =>
@@ -41,6 +42,7 @@ export const GenericDataGrid = ({
         width: col.width,
         minWidth: col.minWidth,
         flex: col.flex,
+        editable: col.editable,
       })),
     [columns]
   );
@@ -64,6 +66,8 @@ export const GenericDataGrid = ({
     ? `Error: ${error.message || "Ocurrió un error al cargar los datos."}`
     : "No se encontraron resultados.";
 
+  // --- Paginación
+
   const paginationModel = {
     page: pagination ? pagination.page - 1 : 0,
     pageSize: pagination?.limit || 25,
@@ -76,6 +80,21 @@ export const GenericDataGrid = ({
     if (newModel.page !== paginationModel.page) {
       onPageChange(newModel.page + 1);
     }
+  };
+
+  /* MANEJO DE CAMBIO DE ESTADO AL EDITAR
+   * Le notifica a GenericCRUDPage (componente padre)
+   * que una fila fue editada
+   *
+   * es útil para manejar la lógica de guardado,
+   * como por ejemplo, deshabilitar el botón de guardado
+   * cuando todavía no hay filas editadas
+   */
+  const handleProcessRowUpdate = (newRow, oldRow) => {
+    if (onEditChange) {
+      onEditChange(newRow, oldRow);
+    }
+    return newRow;
   };
 
   const paperSx = useMemo(
@@ -101,7 +120,7 @@ export const GenericDataGrid = ({
       <DataGrid
         rows={data || []}
         columns={gridColumns}
-        getRowId={(row) => row.id || row.cod_client}
+        getRowId={(row) => row._id}
         loading={loading}
         components={{
           NoRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
@@ -110,12 +129,21 @@ export const GenericDataGrid = ({
         pagination
         paginationMode="server"
         rowCount={pagination?.total || 0}
+        // --- manejo de paginación
         paginationModel={paginationModel}
         onPaginationModelChange={handlePaginationModelChange}
-        pageSizeOptions={[5, 10, 25, 50]}
+        pageSizeOptions={[25, 50, 100]}
+        // --- manejo de ordenamiento
         sortingMode="server"
         sortModel={sortModel}
         onSortModelChange={handleSortModelChange}
+        // --- manejo de edición
+        editMode="row"
+        processRowUpdate={handleProcessRowUpdate}
+        //!!!!!
+        // ver si se puede implementar con snackbar
+        onProcessRowUpdateError={(error) => console.error(error)}
+        // ---------------------------------------
         rowHeight={40}
         sx={{ border: 0, flex: 1 }}
       />

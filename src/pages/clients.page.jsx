@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import ClientCreateDialog from "../components/Dialog/ClientCreateDialog";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 import { ClientsProvider } from "../hooks/context/clientWrapper";
-import { createNewClient } from "../services/clientService";
+import { bulkUpdateClients, createNewClient } from "../services/clientService";
 import { useCRUD } from "../hooks/context/useCRUD";
-import { Alert, AlertTitle, Snackbar } from "@mui/material";
+import { Alert, AlertTitle, Button, Snackbar } from "@mui/material";
 
 const clientColumns = [
   {
@@ -17,16 +17,19 @@ const clientColumns = [
     header: "Razón Social",
     flex: 1,
     minWidth: 200,
+    editable: true,
   },
   {
     accessor: "identiftri",
     header: "Identificador Fiscal",
     minWidth: 180,
+    editable: true,
   },
   {
     accessor: "username",
     header: "Usuario",
     minWidth: 150,
+    editable: true,
   },
   {
     accessor: "active",
@@ -34,6 +37,7 @@ const clientColumns = [
     type: "boolean",
     minWidth: 100,
     align: "center",
+    editable: true,
   },
   {
     accessor: "createdAt",
@@ -48,24 +52,68 @@ export function ClientsPage() {
 
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [isSnackOpen, setSnackOpen] = useState(false);
-  const [error, setError] = useState(null);
+  const [statusMessage, setStatusMessage] = useState({});
 
   const handleAddClient = () => {
     setCreateDialogOpen(true);
   };
 
   const handleSaveClient = async (clientData) => {
+    let response = null;
     try {
-      console.log("Enviando datos para crear cliente:", clientData);
-      await createNewClient(clientData);
+      response = await createNewClient(clientData);
+      setStatusMessage({
+        title: "Usuario creado correctamente",
+      });
       fetchItems();
     } catch (error) {
-      console.error("Falló la creación del cliente desde la página", error);
-      setError(error.message || "Ocurrió un error inesperado.");
+      console.log(response);
+
+      setStatusMessage({
+        title: "Ha ocurrido un problema: ",
+        message: error.message,
+        severity: "error",
+      });
       throw error;
     } finally {
       setSnackOpen(true);
-      setError(false);
+    }
+  };
+
+  const handleUpdateClient = async (clientData) => {
+    let response;
+    try {
+      response = await bulkUpdateClients(clientData);
+      if (response.status == 207) {
+        setStatusMessage({
+          title: "Precaución: ",
+          message:
+            response?.data?.message > 0
+              ? `Se han actualizado ${response?.data?.message} registros`
+              : "No se actualizaron registros",
+          severity: "warning",
+        });
+      } else {
+        console.log(response.data.updatedCount, response);
+        response.data.updatedCount == 1
+          ? setStatusMessage({
+              title: "Cliente actualizado con éxito",
+            })
+          : setStatusMessage({
+              title: "Clientes actualizados exitosamente",
+              message: `Se actualizaron ${response?.data?.updatedCount} registros`,
+            });
+      }
+
+      fetchItems();
+    } catch (error) {
+      setStatusMessage({
+        title: "Ha ocurrido un problema: ",
+        message: response?.data?.message || "Ocurrió un error inesperado.",
+      });
+      throw error;
+    } finally {
+      setSnackOpen(true);
     }
   };
 
@@ -80,6 +128,7 @@ export function ClientsPage() {
         entityName="cliente"
         onAdd={handleAddClient}
         onSave={handleSaveChanges}
+        onUpdate={handleUpdateClient}
       />
       <ClientCreateDialog
         open={isCreateDialogOpen}
@@ -90,17 +139,20 @@ export function ClientsPage() {
       <Snackbar
         open={isSnackOpen}
         autoHideDuration={6000}
-        onClose={() => setSnackOpen(false)}
+        onClose={() => {
+          setSnackOpen(false), setStatusMessage({});
+        }}
       >
         <Alert
-          severity={error ? "error" : "success"}
-          onClose={() => setSnackOpen(false)}
+          severity={statusMessage.severity || "success"}
+          onClose={() => {
+            setSnackOpen(false);
+            setStatusMessage({});
+          }}
         >
-          <AlertTitle>
-            {error ? "Ha ocurrido un error:" : "Usuario creado con éxito."}
-          </AlertTitle>
+          <AlertTitle>{statusMessage.title || "Éxito."}</AlertTitle>
 
-          {error && error}
+          {statusMessage.message || ""}
         </Alert>
       </Snackbar>
     </React.Fragment>
