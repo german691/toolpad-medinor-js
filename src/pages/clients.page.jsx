@@ -4,6 +4,7 @@ import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 import { ClientsProvider } from "../hooks/context/clientWrapper";
 import { createNewClient } from "../services/clientService";
 import { useCRUD } from "../hooks/context/useCRUD";
+import { Alert, AlertTitle, Snackbar } from "@mui/material";
 
 const clientColumns = [
   {
@@ -46,6 +47,8 @@ export function ClientsPage() {
   const { fetchItems } = useCRUD();
 
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isSnackOpen, setSnackOpen] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleAddClient = () => {
     setCreateDialogOpen(true);
@@ -58,7 +61,11 @@ export function ClientsPage() {
       fetchItems();
     } catch (error) {
       console.error("Falló la creación del cliente desde la página", error);
+      setError(error.message || "Ocurrió un error inesperado.");
       throw error;
+    } finally {
+      setSnackOpen(true);
+      setError(false);
     }
   };
 
@@ -79,6 +86,23 @@ export function ClientsPage() {
         onClose={() => setCreateDialogOpen(false)}
         onSave={handleSaveClient}
       />
+
+      <Snackbar
+        open={isSnackOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackOpen(false)}
+      >
+        <Alert
+          severity={error ? "error" : "success"}
+          onClose={() => setSnackOpen(false)}
+        >
+          <AlertTitle>
+            {error ? "Ha ocurrido un error:" : "Usuario creado con éxito."}
+          </AlertTitle>
+
+          {error && error}
+        </Alert>
+      </Snackbar>
     </React.Fragment>
   );
 }
