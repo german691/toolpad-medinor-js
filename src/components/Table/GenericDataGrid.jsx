@@ -78,7 +78,6 @@ export const GenericDataGrid = ({
     }
   };
 
-  // 2. Estilos condicionales para el contenedor Paper
   const paperSx = useMemo(
     () => ({
       width: "100%",

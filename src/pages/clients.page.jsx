@@ -3,6 +3,7 @@ import ClientCreateDialog from "../components/Dialog/ClientCreateDialog";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 import { ClientsProvider } from "../hooks/context/clientWrapper";
 import { createNewClient } from "../services/clientService";
+import { useCRUD } from "../hooks/context/useCRUD";
 
 const clientColumns = [
   {
@@ -42,6 +43,8 @@ const clientColumns = [
 ];
 
 export function ClientsPage() {
+  const { fetchItems } = useCRUD();
+
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
 
   const handleAddClient = () => {
@@ -52,6 +55,7 @@ export function ClientsPage() {
     try {
       console.log("Enviando datos para crear cliente:", clientData);
       await createNewClient(clientData);
+      fetchItems();
     } catch (error) {
       console.error("Falló la creación del cliente desde la página", error);
       throw error;
