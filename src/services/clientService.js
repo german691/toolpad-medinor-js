@@ -1,8 +1,8 @@
-import { apiClient, handleServiceError } from "../api";
+import { api, api, handleServiceError } from "../api";
 
 export const analyzeClients = async (clientsDataObject) => {
   try {
-    const response = await apiClient.post("/clients/analyze", {
+    const response = await api.post("/clients/analyze", {
       clients: clientsDataObject,
     });
     return response.data;
@@ -13,7 +13,7 @@ export const analyzeClients = async (clientsDataObject) => {
 
 export const confirmClientMigration = async (migrationDataObject) => {
   try {
-    const response = await apiClient.post("/clients/make-migration", {
+    const response = await api.post("/clients/make-migration", {
       data: migrationDataObject,
     });
     return response.data;
@@ -29,7 +29,7 @@ export const getClients = async ({
   sort = {},
 } = {}) => {
   try {
-    const response = await apiClient.post("/clients/get", {
+    const response = await api.post("/clients/get", {
       page,
       limit,
       filters,
@@ -43,7 +43,7 @@ export const getClients = async ({
 
 export const getClientById = async (id) => {
   try {
-    const response = await apiClient.get(`/clients/get/${id}`);
+    const response = await api.get(`/clients/get/${id}`);
     return response.data;
   } catch (error) {
     handleServiceError(error);
@@ -52,7 +52,7 @@ export const getClientById = async (id) => {
 
 export const createNewClient = async (clientData) => {
   try {
-    const response = await apiClient.post("/clients/add", clientData);
+    const response = await api.post("/clients/add", clientData);
     return response.data;
   } catch (error) {
     handleServiceError(error);
@@ -61,7 +61,7 @@ export const createNewClient = async (clientData) => {
 
 export const updateClientById = async (id, clientData) => {
   try {
-    const response = await apiClient.put(`/clients/get/${id}`, clientData);
+    const response = await api.put(`/clients/get/${id}`, clientData);
     return response.data;
   } catch (error) {
     handleServiceError(error);

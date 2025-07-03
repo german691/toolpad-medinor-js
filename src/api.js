@@ -1,7 +1,7 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-export const apiClient = axios.create({
+export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
@@ -10,7 +10,7 @@ export const apiClient = axios.create({
 
 // ver cómo manejar esto desde el back en un futuro
 // cuando se implemente el wrapper de autenticación para toolpad
-apiClient.interceptors.request.use(
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("authToken");
     if (token) {
