@@ -1,4 +1,4 @@
-import { api, api, handleServiceError } from "../api";
+import { api, handleServiceError } from "../api";
 
 export const analyzeClients = async (clientsDataObject) => {
   try {
