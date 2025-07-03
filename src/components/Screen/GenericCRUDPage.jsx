@@ -1,0 +1,149 @@
+import React, { useState, useMemo } from "react";
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  Button,
+  IconButton,
+  Stack,
+} from "@mui/material";
+import { PageContainer } from "@toolpad/core/PageContainer";
+import { useCRUD } from "../../hooks/context/useCRUD";
+import {
+  Add,
+  Cancel,
+  Close,
+  Fullscreen,
+  FullscreenExit,
+  Refresh,
+  Save,
+} from "@mui/icons-material";
+import { GenericDataGrid } from "../Table/GenericDataGrid";
+
+export function GenericCRUDPage({
+  columns,
+  entityName,
+  onAdd,
+  onSave,
+  onCancel,
+}) {
+  const {
+    items,
+    pagination,
+    loading,
+    error,
+    sort,
+    fetchItems,
+    setPage,
+    setLimit,
+    setSort,
+    clearError,
+  } = useCRUD();
+
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const handleToggleFullScreen = () => setIsFullScreen((prev) => !prev);
+
+  const ToolbarButtons = () => (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+      }}
+    >
+      <Stack direction="row" spacing={2}>
+        <IconButton onClick={fetchItems}>
+          <Refresh />
+        </IconButton>
+        <IconButton onClick={handleToggleFullScreen}>
+          {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
+        </IconButton>
+      </Stack>
+      <Stack direction="row" spacing={2}>
+        {onCancel && (
+          <Button variant="outlined" startIcon={<Cancel />} onClick={onCancel}>
+            Cancelar Edición
+          </Button>
+        )}
+        {onSave && (
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Save />}
+            onClick={onSave}
+          >
+            Guardar Cambios
+          </Button>
+        )}
+        {onAdd && (
+          <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
+            Crear {entityName}
+          </Button>
+        )}
+      </Stack>
+    </Box>
+  );
+
+  const containerSx = useMemo(
+    () => ({
+      display: "flex",
+      flexDirection: "column",
+      gap: 2,
+      ...(isFullScreen
+        ? {
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            bgcolor: "background.paper",
+            zIndex: 1300,
+            padding: "16px",
+            boxSizing: "border-box",
+          }
+        : { mt: 2 }),
+    }),
+    [isFullScreen]
+  );
+
+  return (
+    <PageContainer maxWidth={false}>
+      <Box sx={containerSx}>
+        <ToolbarButtons />
+        <GenericDataGrid
+          data={items}
+          columns={columns}
+          loading={loading}
+          error={error}
+          pagination={pagination}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+          sort={sort}
+          onSortChange={setSort}
+          isFullScreen={isFullScreen}
+        />
+        {error && (
+          <Alert
+            severity="error"
+            action={
+              <IconButton
+                aria-label="close"
+                color="inherit"
+                size="small"
+                onClick={clearError}
+              >
+                <Close fontSize="inherit" />
+              </IconButton>
+            }
+          >
+            <AlertTitle>
+              {error?.message ||
+                `Ocurrió un error inesperado al cargar los ${entityName}s.`}
+            </AlertTitle>
+          </Alert>
+        )}
+      </Box>
+    </PageContainer>
+  );
+}

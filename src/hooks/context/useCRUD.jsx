@@ -6,11 +6,9 @@ import React, {
   useEffect,
 } from "react";
 
-import { getClients } from "../../services/ClientService";
-
 const initialState = {
-  clients: [],
-  client: null,
+  items: [],
+  item: null,
   pagination: {
     page: 1,
     limit: 25,
@@ -25,8 +23,8 @@ const initialState = {
 
 const ACTION_TYPES = {
   FETCH_START: "FETCH_START",
-  FETCH_CLIENTS_SUCCESS: "FETCH_CLIENTS_SUCCESS",
-  FETCH_CLIENT_SUCCESS: "FETCH_CLIENT_SUCCESS",
+  FETCH_ITEMS_SUCCESS: "FETCH_ITEMS_SUCCESS",
+  FETCH_ITEM_SUCCESS: "FETCH_ITEM_SUCCESS",
   ACTION_SUCCESS: "ACTION_SUCCESS",
   FETCH_ERROR: "FETCH_ERROR",
   SET_PAGE: "SET_PAGE",
@@ -36,15 +34,15 @@ const ACTION_TYPES = {
   CLEAR_ERROR: "CLEAR_ERROR",
 };
 
-const clientsReducer = (state, action) => {
+const crudReducer = (state, action) => {
   switch (action.type) {
     case ACTION_TYPES.FETCH_START:
       return { ...state, loading: true, error: null };
-    case ACTION_TYPES.FETCH_CLIENTS_SUCCESS:
+    case ACTION_TYPES.FETCH_ITEMS_SUCCESS:
       return {
         ...state,
         loading: false,
-        clients: action.payload.items,
+        items: action.payload.items,
         pagination: {
           ...state.pagination,
           page: action.payload.page,
@@ -52,8 +50,8 @@ const clientsReducer = (state, action) => {
           totalPages: action.payload.totalPages,
         },
       };
-    case ACTION_TYPES.FETCH_CLIENT_SUCCESS:
-      return { ...state, loading: false, client: action.payload.client };
+    case ACTION_TYPES.FETCH_ITEM_SUCCESS:
+      return { ...state, loading: false, item: action.payload.item };
     case ACTION_TYPES.ACTION_SUCCESS:
       return { ...state, loading: false };
     case ACTION_TYPES.FETCH_ERROR:
@@ -87,21 +85,22 @@ const clientsReducer = (state, action) => {
   }
 };
 
-const ClientsContext = createContext();
+const CRUDContext = createContext();
 
-export const ClientsProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(clientsReducer, initialState);
+export const CRUDProvider = ({ children, services }) => {
+  const [state, dispatch] = useReducer(crudReducer, initialState);
 
-  const fetchClients = useCallback(async () => {
+  const { getItems, getItemById, createItem, updateItem } = services;
+
+  const fetchItems = useCallback(async () => {
+    if (!getItems) return;
     dispatch({ type: ACTION_TYPES.FETCH_START });
-
     try {
       const { page, limit } = state.pagination;
       const { filters, sort } = state;
-      const data = await getClients({ page, limit, filters, sort });
-
+      const data = await getItems({ page, limit, filters, sort });
       dispatch({
-        type: ACTION_TYPES.FETCH_CLIENTS_SUCCESS,
+        type: ACTION_TYPES.FETCH_ITEMS_SUCCESS,
         payload: data,
       });
     } catch (error) {
@@ -112,7 +111,69 @@ export const ClientsProvider = ({ children }) => {
     state.pagination.limit,
     state.filters,
     state.sort,
+    getItems,
   ]);
+
+  const fetchItemById = useCallback(
+    async (id) => {
+      if (!getItemById) {
+        const err = new Error(
+          "La función 'getItemById' no fue proveída en los servicios."
+        );
+        dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: err });
+        console.error(err);
+        return;
+      }
+
+      dispatch({ type: ACTION_TYPES.FETCH_START });
+
+      try {
+        const data = await getItemById(id);
+
+        dispatch({
+          type: ACTION_TYPES.FETCH_ITEM_SUCCESS,
+          payload: { item: data },
+        });
+      } catch (error) {
+        dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
+      }
+    },
+    [getItemById]
+  );
+
+  const addItem = useCallback(
+    async (itemData) => {
+      if (!createItem)
+        throw new Error("La función 'createItem' no fue proveída.");
+      dispatch({ type: ACTION_TYPES.FETCH_START });
+      try {
+        await createItem(itemData);
+        dispatch({ type: ACTION_TYPES.ACTION_SUCCESS });
+        fetchItems();
+      } catch (error) {
+        dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
+        throw error;
+      }
+    },
+    [createItem, fetchItems]
+  );
+
+  const editItem = useCallback(
+    async (id, itemData) => {
+      if (!updateItem)
+        throw new Error("La función 'updateItem' no fue proveída.");
+      dispatch({ type: ACTION_TYPES.FETCH_START });
+      try {
+        await updateItem(id, itemData);
+        dispatch({ type: ACTION_TYPES.ACTION_SUCCESS });
+        fetchItems();
+      } catch (error) {
+        dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
+        throw error;
+      }
+    },
+    [updateItem, fetchItems]
+  );
 
   const setPage = useCallback((page) => {
     dispatch({ type: ACTION_TYPES.SET_PAGE, payload: page });
@@ -135,12 +196,15 @@ export const ClientsProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+    fetchItems();
+  }, [fetchItems]);
 
   const value = {
     ...state,
-    fetchClients,
+    fetchItems,
+    fetchItemById,
+    addItem,
+    editItem,
     setPage,
     setLimit,
     setFilters,
@@ -148,15 +212,13 @@ export const ClientsProvider = ({ children }) => {
     clearError,
   };
 
-  return (
-    <ClientsContext.Provider value={value}>{children}</ClientsContext.Provider>
-  );
+  return <CRUDContext.Provider value={value}>{children}</CRUDContext.Provider>;
 };
 
-export const useClients = () => {
-  const context = useContext(ClientsContext);
+export const useCRUD = () => {
+  const context = useContext(CRUDContext);
   if (context === undefined) {
-    throw new Error("useClients debe ser usado dentro de un ClientsProvider");
+    throw new Error("useCRUD debe ser usado dentro de un CRUDProvider");
   }
   return context;
 };

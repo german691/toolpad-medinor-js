@@ -67,3 +67,11 @@ export const updateClientById = async (id, clientData) => {
     handleServiceError(error);
   }
 };
+
+export const clientService = {
+  getItems: getClients,
+  getItemById: getClientById,
+  createItem: createNewClient,
+  editItem: updateClientById,
+  updateItem: updateClientById,
+};
