@@ -1,69 +1,104 @@
 import React, { useState } from "react";
 import ClientCreateDialog from "../components/Dialog/ClientCreateDialog";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
-import { ClientsProvider } from "../hooks/context/clientWrapper";
-import { bulkUpdateClients, createNewClient } from "../services/clientService";
+import {
+  bulkUpdateProducts,
+  createNewProduct,
+} from "../services/productService";
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
+import { ProductsProvider } from "../hooks/context/productWrapper";
 
-const clientColumns = [
+const productColumns = [
   {
-    accessor: "cod_client",
-    header: "Código Cliente",
-    width: 150,
+    accessor: "code",
+    header: "Código",
+    width: 120,
   },
   {
-    accessor: "razon_soci",
-    header: "Razón Social",
+    accessor: "desc",
+    header: "Descripción",
     flex: 1,
+    minWidth: 225,
+    editable: true,
+  },
+  {
+    accessor: "extra_desc",
+    header: "Descripción Adicional",
     minWidth: 200,
     editable: true,
   },
   {
-    accessor: "identiftri",
-    header: "Identificador Fiscal",
-    minWidth: 180,
+    accessor: "lab",
+    header: "Laboratorio",
+    minWidth: 200,
     editable: true,
   },
   {
-    accessor: "username",
-    header: "Usuario",
+    accessor: "notes",
+    header: "Notas",
     minWidth: 150,
     editable: true,
   },
   {
-    accessor: "active",
-    header: "Activo",
-    type: "boolean",
+    accessor: "medinor_price",
+    header: "P. Medinor",
     minWidth: 100,
+    editable: true,
+  },
+  {
+    accessor: "public_price",
+    header: "P. Público",
+    minWidth: 100,
+    editable: true,
+  },
+  {
+    accessor: "price",
+    header: "P. Costo",
+    minWidth: 100,
+    editable: true,
+  },
+  {
+    accessor: "iva",
+    header: "IVA",
+    type: "boolean",
+    width: 60,
+    align: "center",
+    editable: true,
+  },
+  {
+    accessor: "listed",
+    header: "Visible",
+    type: "boolean",
+    minWidth: 60,
     align: "center",
     editable: true,
   },
   {
     accessor: "createdAt",
-    header: "Fecha de Creación",
-    width: 180,
+    header: "F. Creación",
+    width: 100,
     render: (row) => new Date(row.createdAt).toLocaleDateString(),
   },
 ];
 
-export function ClientsPage() {
+export function ProductsPage() {
   const { fetchItems } = useCRUD();
 
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [isSnackOpen, setSnackOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState({});
 
-  const handleAddClient = () => {
+  const handleAddProduct = () => {
     setCreateDialogOpen(true);
   };
 
-  const handleSaveClient = async (clientData) => {
+  const handleSaveProduct = async (productData) => {
     let response = null;
     try {
-      response = await createNewClient(clientData);
+      response = await createNewProduct(productData);
       setStatusMessage({
-        title: "Usuario creado correctamente",
+        title: "Producto añadido correctamente",
       });
       fetchItems();
     } catch (error) {
@@ -80,10 +115,10 @@ export function ClientsPage() {
     }
   };
 
-  const handleUpdateClient = async (clientData) => {
+  const handleUpdateClient = async (productData) => {
     let response;
     try {
-      response = await bulkUpdateClients(clientData);
+      response = await bulkUpdateProducts(productData);
       if (response.status == 207) {
         setStatusMessage({
           title: "Precaución: ",
@@ -97,10 +132,10 @@ export function ClientsPage() {
         console.log(response.data.updatedCount, response);
         response.data.updatedCount == 1
           ? setStatusMessage({
-              title: "Cliente actualizado con éxito",
+              title: "Producto actualizado con éxito",
             })
           : setStatusMessage({
-              title: "Clientes actualizados exitosamente",
+              title: "Productos actualizados exitosamente",
               message: `Se actualizaron ${response?.data?.updatedCount} registros`,
             });
       }
@@ -124,16 +159,16 @@ export function ClientsPage() {
   return (
     <React.Fragment>
       <GenericCRUDPage
-        columns={clientColumns}
-        entityName="cliente"
-        onAdd={handleAddClient}
+        columns={productColumns}
+        entityName="producto"
+        onAdd={handleAddProduct}
         onSave={handleSaveChanges}
         onUpdate={handleUpdateClient}
       />
       <ClientCreateDialog
         open={isCreateDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
-        onSave={handleSaveClient}
+        onSave={handleSaveProduct}
       />
 
       <Snackbar
@@ -159,10 +194,10 @@ export function ClientsPage() {
   );
 }
 
-export default function ClientsWrapper() {
+export default function ProductsWrapper() {
   return (
-    <ClientsProvider>
-      <ClientsPage />
-    </ClientsProvider>
+    <ProductsProvider>
+      <ProductsPage />
+    </ProductsProvider>
   );
 }

@@ -19,6 +19,7 @@ const initialState = {
   error: null,
   filters: {},
   sort: {},
+  search: "",
 };
 
 const ACTION_TYPES = {
@@ -78,6 +79,12 @@ const crudReducer = (state, action) => {
         sort: action.payload,
         pagination: { ...state.pagination, page: 1 },
       };
+    case ACTION_TYPES.SET_SEARCH:
+      return {
+        ...state,
+        search: action.payload,
+        pagination: { ...state.pagination, page: 1 },
+      };
     case ACTION_TYPES.CLEAR_ERROR:
       return { ...state, error: null };
     default:
@@ -97,8 +104,9 @@ export const CRUDProvider = ({ children, services }) => {
     dispatch({ type: ACTION_TYPES.FETCH_START });
     try {
       const { page, limit } = state.pagination;
-      const { filters, sort } = state;
-      const data = await getItems({ page, limit, filters, sort });
+      const { filters, sort, search } = state;
+      console.log(state);
+      const data = await getItems({ page, limit, filters, sort, search });
       dispatch({
         type: ACTION_TYPES.FETCH_ITEMS_SUCCESS,
         payload: data,
@@ -111,6 +119,7 @@ export const CRUDProvider = ({ children, services }) => {
     state.pagination.limit,
     state.filters,
     state.sort,
+    state.search,
     getItems,
   ]);
 
@@ -191,6 +200,10 @@ export const CRUDProvider = ({ children, services }) => {
     dispatch({ type: ACTION_TYPES.SET_FILTERS, payload: filters });
   }, []);
 
+  const setSearch = useCallback((search) => {
+    dispatch({ type: ACTION_TYPES.SET_SEARCH, payload: search });
+  }, []);
+
   const clearError = useCallback(() => {
     dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
   }, []);
@@ -210,6 +223,7 @@ export const CRUDProvider = ({ children, services }) => {
     setFilters,
     setSort,
     clearError,
+    setSearch,
   };
 
   return <CRUDContext.Provider value={value}>{children}</CRUDContext.Provider>;

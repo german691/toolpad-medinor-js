@@ -6,6 +6,7 @@ import {
   Button,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
@@ -20,6 +21,7 @@ import {
   Save,
 } from "@mui/icons-material";
 import { GenericDataGrid } from "../Table/GenericDataGrid";
+import Searchbox from "../UI/Searchbox";
 
 export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
   const {
@@ -33,6 +35,7 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
     setLimit,
     setSort,
     clearError,
+    setSearch,
   } = useCRUD();
 
   /* Manejo de pantalla completa */
@@ -42,6 +45,11 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
   /* Manejo de pantalla completa */
   const [hasChanges, setHasChanges] = useState(false);
   const [modifiedRows, setModifiedRows] = useState({});
+
+  const handleRefresh = useCallback(() => {
+    setSearch("");
+    fetchItems();
+  });
 
   const handleDataGridCancelChanges = useCallback(() => {
     setHasChanges(false);
@@ -82,7 +90,7 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
       <Stack direction="row" spacing={2}>
         {/* Actualizar */}
         <Tooltip title="Actualizar" arrow text="">
-          <IconButton onClick={fetchItems}>
+          <IconButton onClick={handleRefresh}>
             <Refresh />
           </IconButton>
         </Tooltip>
@@ -109,7 +117,8 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
         </IconButton>
         {/* Buscador */}
       </Stack>
-      <Stack direction="row" spacing={2}>
+      <Stack direction="row" spacing={2} size="small">
+        <Searchbox setSearch={setSearch} />
         <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
           Crear {entityName}
         </Button>

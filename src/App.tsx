@@ -53,7 +53,7 @@ const NAVIGATION: Navigation = [
         icon: <LibraryAdd />,
       },
       {
-        segment: "manage",
+        segment: "crud",
         title: "Gestión",
         icon: <Edit />,
       },

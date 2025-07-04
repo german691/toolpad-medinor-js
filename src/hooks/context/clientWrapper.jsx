@@ -1,5 +1,5 @@
 import React from "react";
-import { clientService } from "../../services/clientService"; // Import your specific client API functions
+import { clientService } from "../../services/clientService";
 import { CRUDProvider } from "./useCRUD";
 
 export const ClientsProvider = ({ children }) => {

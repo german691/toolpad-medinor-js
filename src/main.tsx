@@ -6,6 +6,7 @@ import Layout from './layouts/dashboard';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import theme from '../theme';
 import clientsWrapper from './pages/clients.page';
+import ProductsWrapper from './pages/products.page';
 
 
 const router = createBrowserRouter([
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
           {
             path: 'clients/crud',
             Component: clientsWrapper,
+          },
+          {
+            path: 'products/crud',
+            Component: ProductsWrapper,
           },
         ],
       },

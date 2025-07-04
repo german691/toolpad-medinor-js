@@ -27,6 +27,7 @@ export const getClients = async ({
   limit = 25,
   filters = {},
   sort = {},
+  search = "",
 } = {}) => {
   try {
     const response = await api.post("/clients/get", {
@@ -34,6 +35,7 @@ export const getClients = async ({
       limit,
       filters,
       sort,
+      search,
     });
     return response.data;
   } catch (error) {
