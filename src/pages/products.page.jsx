@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import ClientCreateDialog from "../components/Dialog/ClientCreateDialog";
+import ProductCreateDialog from "../components/Dialog/ProductCreateDialog";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import {
   bulkUpdateProducts,
@@ -165,7 +165,7 @@ export function ProductsPage() {
         onSave={handleSaveChanges}
         onUpdate={handleUpdateClient}
       />
-      <ClientCreateDialog
+      <ProductCreateDialog
         open={isCreateDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
         onSave={handleSaveProduct}

@@ -10,27 +10,52 @@ import {
   FormControlLabel,
   Checkbox,
   Box,
+  Divider,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
+import getLabs from "../../services/labService";
 
 const initialFormState = {
-  cod_client: "",
-  identiftri: "",
-  razon_soci: "",
-  username: "",
-  password: "",
-  active: false,
+  code: "",
+  notes: null,
+  lab: "",
+  desc: "",
+  extra_desc: null,
+  iva: false,
+  listed: false,
+  medinor_price: 0,
+  public_price: 0,
+  price: 0,
 };
 
-export default function ClientCreateDialog({ open, onClose, onSave }) {
+export default function ProductCreateDialog({ open, onClose, onSave }) {
   const [formData, setFormData] = useState(initialFormState);
   const [isSaving, setIsSaving] = useState(false);
+  const [labs, setLabs] = useState();
+
+  const handleGetLabs = async () => {
+    try {
+      const response = await getLabs();
+      setLabs(response.data.items || []);
+      console.log(response.data.items);
+    } catch (err) {
+      setLabs([]);
+    }
+  };
 
   useEffect(() => {
-    if (!open) {
-      setFormData(initialFormState);
-    }
+    if (!open) return;
+
+    handleGetLabs();
+
+    setFormData(initialFormState);
+    handleGetLabs();
   }, [open]);
 
   const handleClose = () => {
@@ -63,7 +88,7 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
 
   return (
     <>
-      <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle
           sx={{
             display: "flex",
@@ -72,9 +97,9 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
             mt: 2,
           }}
         >
-          Crear Nuevo Cliente
+          Crear Nuevo Producto
           <Tooltip
-            title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único producto."
+            title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único producto o quieres crear uno particular."
             arrow
           >
             <Info color="action" fontSize="medium" />
@@ -83,58 +108,73 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
         <DialogContent
           sx={{ display: "flex", my: 2, flexDirection: "column", gap: 1 }}
         >
+          <Typography variant="overline">Información general</Typography>
+          <Divider />
           <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
             <TextField
               autoFocus
               margin="dense"
-              name="cod_client"
+              name="code"
               label="Código"
               type="text"
-              fullWidth
               value={formData.cod_client}
               onChange={handleInputChange}
-              sx={{ width: "25%" }}
+              sx={{ flex: 1 }}
             />
             <TextField
+              autoFocus
               margin="dense"
-              name="identiftri"
-              label="Identificador Fiscal (CUIT/CUIL)"
+              name="notes"
+              label="Notas"
               type="text"
-              fullWidth
-              value={formData.identiftri}
+              value={formData.cod_client}
               onChange={handleInputChange}
               sx={{ flex: 1 }}
             />
           </Box>
           <TextField
+            autoFocus
             margin="dense"
-            name="razon_soci"
-            label="Razón Social"
+            name="desc"
+            label="Descripción"
             type="text"
-            fullWidth
-            value={formData.razon_soci}
+            value={formData.cod_client}
+            onChange={handleInputChange}
+          />
+          <TextField
+            autoFocus
+            multiline
+            maxRows={3}
+            margin="dense"
+            name="extra_desc"
+            label="Descripción adicional"
+            type="text"
+            value={formData.cod_client}
             onChange={handleInputChange}
           />
           <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
-            <TextField
-              margin="dense"
-              name="username"
-              label="Usuario"
-              type="text"
-              fullWidth
-              value={formData.username}
-              onChange={handleInputChange}
-            />
-            <TextField
-              margin="dense"
-              name="password"
-              label="Contraseña"
-              type="password"
-              fullWidth
-              value={formData.password}
-              onChange={handleInputChange}
-            />
+            {/* <FormControl sx={{ m: 1, width: 300 }}>
+              <InputLabel>Laboratorio</InputLabel>
+              <Select>
+                {labs.map((lab) => (
+                  <MenuItem key={lab} value={lab}>
+                    {lab}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl> */}
           </Box>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Typography variant="overline">Precios</Typography>
+          </Box>
+          <Divider />
+          <Box></Box>
           <FormControlLabel
             control={
               <Checkbox
@@ -142,8 +182,8 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
                 onChange={handleCheckboxChange}
               />
             }
-            label="Activo"
-            labelPlacement="start"
+            label="Listado"
+            labelPlacement="end"
           />
         </DialogContent>
         <DialogActions sx={{ mx: 2, mb: 2 }}>
@@ -163,7 +203,7 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
   );
 }
 
-ClientCreateDialog.propTypes = {
+ProductCreateDialog.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
