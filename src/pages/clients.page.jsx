@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import ClientCreateDialog from "../components/Dialog/ClientCreateDialog";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import { ClientsProvider } from "../hooks/context/clientWrapper";
 import { bulkUpdateClients, createNewClient } from "../services/clientService";
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 
 const clientColumns = [
   {

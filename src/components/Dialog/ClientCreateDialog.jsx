@@ -10,6 +10,8 @@ import {
   FormControlLabel,
   Checkbox,
   Box,
+  Typography,
+  Divider,
 } from "@mui/material";
 import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
@@ -83,6 +85,10 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
         <DialogContent
           sx={{ display: "flex", my: 2, flexDirection: "column", gap: 1 }}
         >
+          <Typography variant="overline" sx={{ mt: 2 }}>
+            Información de cliente
+          </Typography>
+          <Divider />
           <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
             <TextField
               autoFocus
@@ -115,6 +121,10 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
             value={formData.razon_soci}
             onChange={handleInputChange}
           />
+          <Typography variant="overline" sx={{ mt: 2 }}>
+            credenciales
+          </Typography>
+          <Divider />
           <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
             <TextField
               margin="dense"

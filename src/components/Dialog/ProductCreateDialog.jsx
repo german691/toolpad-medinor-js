@@ -23,10 +23,10 @@ import getLabs from "../../services/labService";
 
 const initialFormState = {
   code: "",
-  notes: null,
+  notes: "",
   lab: "",
   desc: "",
-  extra_desc: null,
+  extra_desc: "",
   iva: false,
   listed: false,
   medinor_price: 0,
@@ -37,14 +37,14 @@ const initialFormState = {
 export default function ProductCreateDialog({ open, onClose, onSave }) {
   const [formData, setFormData] = useState(initialFormState);
   const [isSaving, setIsSaving] = useState(false);
-  const [labs, setLabs] = useState();
+  const [labs, setLabs] = useState([]);
 
   const handleGetLabs = async () => {
     try {
       const response = await getLabs();
       setLabs(response.data.items || []);
-      console.log(response.data.items);
-    } catch (err) {
+    } catch (error) {
+      console.log(error);
       setLabs([]);
     }
   };
@@ -53,9 +53,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
     if (!open) return;
 
     handleGetLabs();
-
     setFormData(initialFormState);
-    handleGetLabs();
   }, [open]);
 
   const handleClose = () => {
@@ -69,137 +67,173 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
   };
 
   const handleCheckboxChange = (e) => {
-    const { checked } = e.target;
-    setFormData((prev) => ({ ...prev, active: checked }));
+    const { name, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const handleSaveClick = async () => {
     setIsSaving(true);
     try {
-      await onSave(formData);
+      const dataToSave = {
+        ...formData,
+        medinor_price: parseFloat(formData.medinor_price) || 0,
+        public_price: parseFloat(formData.public_price) || 0,
+        price: parseFloat(formData.price) || 0,
+      };
+      console.log(dataToSave);
+      await onSave(dataToSave);
       handleClose();
     } catch (err) {
-      console.error("Error al guardar el cliente:", err);
+      console.error("Error al guardar el producto:", err);
     } finally {
       setIsSaving(false);
-      handleClose();
     }
   };
 
   return (
-    <>
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            opacity: "80%",
-            mt: 2,
-          }}
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          opacity: "80%",
+          mt: 1,
+        }}
+      >
+        Crear Nuevo Producto
+        <Tooltip
+          title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único producto o quieres crear uno particular."
+          arrow
         >
-          Crear Nuevo Producto
-          <Tooltip
-            title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único producto o quieres crear uno particular."
-            arrow
-          >
-            <Info color="action" fontSize="medium" />
-          </Tooltip>
-        </DialogTitle>
-        <DialogContent
-          sx={{ display: "flex", my: 2, flexDirection: "column", gap: 1 }}
-        >
-          <Typography variant="overline">Información general</Typography>
-          <Divider />
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
-            <TextField
-              autoFocus
-              margin="dense"
-              name="code"
-              label="Código"
-              type="text"
-              value={formData.cod_client}
-              onChange={handleInputChange}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              autoFocus
-              margin="dense"
-              name="notes"
-              label="Notas"
-              type="text"
-              value={formData.cod_client}
-              onChange={handleInputChange}
-              sx={{ flex: 1 }}
-            />
-          </Box>
+          <Info color="action" fontSize="medium" />
+        </Tooltip>
+      </DialogTitle>
+      <DialogContent
+        sx={{ display: "flex", my: 1, flexDirection: "column", gap: 2 }}
+      >
+        <Typography variant="overline">Información general</Typography>
+        <Divider />
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
           <TextField
             autoFocus
             margin="dense"
-            name="desc"
-            label="Descripción"
+            name="code"
+            label="Código"
             type="text"
-            value={formData.cod_client}
+            value={formData.code}
             onChange={handleInputChange}
+            sx={{ flex: 1 }}
           />
           <TextField
-            autoFocus
-            multiline
-            maxRows={3}
             margin="dense"
-            name="extra_desc"
-            label="Descripción adicional"
+            name="notes"
+            label="Notas"
             type="text"
-            value={formData.cod_client}
+            value={formData.notes}
             onChange={handleInputChange}
+            sx={{ flex: 1 }}
           />
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
-            {/* <FormControl sx={{ m: 1, width: 300 }}>
-              <InputLabel>Laboratorio</InputLabel>
-              <Select>
-                {labs.map((lab) => (
-                  <MenuItem key={lab} value={lab}>
-                    {lab}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl> */}
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-            }}
-          >
-            <Typography variant="overline">Precios</Typography>
-          </Box>
-          <Divider />
-          <Box></Box>
+        </Box>
+        <TextField
+          margin="dense"
+          name="desc"
+          label="Descripción"
+          type="text"
+          value={formData.desc}
+          onChange={handleInputChange}
+        />
+        <TextField
+          multiline
+          maxRows={3}
+          margin="dense"
+          name="extra_desc"
+          label="Descripción adicional"
+          type="text"
+          value={formData.extra_desc}
+          onChange={handleInputChange}
+        />
+        <FormControl fullWidth margin="dense">
+          <InputLabel>Laboratorio</InputLabel>
+          <Select name="lab" value={formData.lab} onChange={handleInputChange}>
+            {labs.map((labObj) => (
+              <MenuItem key={labObj.lab} value={labObj.lab}>
+                {labObj.lab}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Typography variant="overline" sx={{ mt: 2 }}>
+          Precios y Estado
+        </Typography>
+        <Divider />
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 2, mt: 1 }}>
+          <TextField
+            margin="dense"
+            name="price"
+            label="Precio"
+            type="number"
+            value={formData.price}
+            onChange={handleInputChange}
+            sx={{ flex: 1 }}
+          />
+          <TextField
+            margin="dense"
+            name="public_price"
+            label="Precio Público"
+            type="number"
+            value={formData.public_price}
+            onChange={handleInputChange}
+            sx={{ flex: 1 }}
+          />
+          <TextField
+            margin="dense"
+            name="medinor_price"
+            label="Precio Medinor"
+            type="number"
+            value={formData.medinor_price}
+            onChange={handleInputChange}
+            sx={{ flex: 1 }}
+          />
+        </Box>
+        <Box>
           <FormControlLabel
             control={
               <Checkbox
-                checked={formData.active}
+                name="listed"
+                checked={formData.listed}
                 onChange={handleCheckboxChange}
               />
             }
             label="Listado"
             labelPlacement="end"
           />
-        </DialogContent>
-        <DialogActions sx={{ mx: 2, mb: 2 }}>
-          <Button onClick={handleClose} disabled={isSaving}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSaveClick}
-            variant="contained"
-            disabled={isSaving}
-          >
-            {isSaving ? "Guardando..." : "Guardar"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+          <FormControlLabel
+            control={
+              <Checkbox
+                name="iva"
+                checked={formData.iva}
+                onChange={handleCheckboxChange}
+              />
+            }
+            label="Aplica IVA"
+            labelPlacement="end"
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ mx: 2, mb: 2 }}>
+        <Button onClick={handleClose} disabled={isSaving}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleSaveClick}
+          variant="contained"
+          disabled={isSaving}
+        >
+          {isSaving ? "Guardando..." : "Guardar"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

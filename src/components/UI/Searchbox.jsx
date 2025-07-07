@@ -20,6 +20,12 @@ export default function Searchbox({ setSearch }) {
     setSearch(searchQuery);
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <Box sx={{ width: "300px" }}>
       <FormControl variant="outlined" fullWidth>
@@ -29,6 +35,7 @@ export default function Searchbox({ setSearch }) {
         <OutlinedInput
           value={searchQuery}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           size="small"
           id="outlined-adornment-password"
           endAdornment={

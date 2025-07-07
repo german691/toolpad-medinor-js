@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import ProductCreateDialog from "../components/Dialog/ProductCreateDialog";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import {
   bulkUpdateProducts,
   createNewProduct,
@@ -8,6 +7,7 @@ import {
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 
 const productColumns = [
   {
@@ -95,6 +95,7 @@ export function ProductsPage() {
 
   const handleSaveProduct = async (productData) => {
     let response = null;
+    console.log("lo que llega a la pag", productData);
     try {
       response = await createNewProduct(productData);
       setStatusMessage({

@@ -1,7 +1,7 @@
-import * as React from 'react';
-import { Outlet } from 'react-router';
-import { ReactRouterAppProvider } from '@toolpad/core/react-router';
-import type { Navigation } from '@toolpad/core/AppProvider';
+import * as React from "react";
+import { Outlet } from "react-router";
+import { ReactRouterAppProvider } from "@toolpad/core/react-router";
+import type { Navigation } from "@toolpad/core/AppProvider";
 
 import {
   ShoppingCart,
@@ -18,8 +18,8 @@ import {
 
 const NAVIGATION: Navigation = [
   {
-    kind: 'header',
-    title: 'Main items',
+    kind: "header",
+    title: "Main items",
   },
   {
     segment: "clients",
@@ -91,9 +91,7 @@ const BRANDING = {
   title: "Medinor",
 };
 
-
 export default function App() {
-
   return (
     <ReactRouterAppProvider navigation={NAVIGATION} branding={BRANDING}>
       <Outlet />
