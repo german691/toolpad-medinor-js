@@ -14,6 +14,8 @@ import {
   Edit,
   LibraryAdd,
   Science,
+  AddShoppingCart,
+  Sell,
 } from "@mui/icons-material";
 
 const NAVIGATION: Navigation = [
@@ -73,6 +75,11 @@ const NAVIGATION: Navigation = [
     title: "Pedidos",
     icon: <ShoppingCart />,
     children: [
+      {
+        segment: "create",
+        title: "Agregar pedido",
+        icon: <Sell />,
+      },
       {
         segment: "manage",
         title: "Lista de Pedidos",

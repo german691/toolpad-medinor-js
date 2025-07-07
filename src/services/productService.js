@@ -38,6 +38,8 @@ export const getProducts = async ({
       search,
     });
 
+    console.log(response);
+
     return response.data;
   } catch (error) {
     handleServiceError(error);

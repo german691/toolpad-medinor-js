@@ -20,11 +20,13 @@ import {
 import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
 import getLabs from "../../services/labService";
+import getCategories from "../../services/categoryService";
 
 const initialFormState = {
   code: "",
   notes: "",
   lab: "",
+  category: "",
   desc: "",
   extra_desc: "",
   iva: false,
@@ -38,6 +40,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
   const [formData, setFormData] = useState(initialFormState);
   const [isSaving, setIsSaving] = useState(false);
   const [labs, setLabs] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const handleGetLabs = async () => {
     try {
@@ -49,10 +52,21 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
     }
   };
 
+  const handleGetCategories = async () => {
+    try {
+      const response = await getCategories();
+      setCategories(response.data.items || []);
+    } catch (error) {
+      console.log(error);
+      setCategories([]);
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
 
     handleGetLabs();
+    handleGetCategories();
     setFormData(initialFormState);
   }, [open]);
 
@@ -153,16 +167,36 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           value={formData.extra_desc}
           onChange={handleInputChange}
         />
-        <FormControl fullWidth margin="dense">
-          <InputLabel>Laboratorio</InputLabel>
-          <Select name="lab" value={formData.lab} onChange={handleInputChange}>
-            {labs.map((labObj) => (
-              <MenuItem key={labObj.lab} value={labObj.lab}>
-                {labObj.lab}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Laboratorio</InputLabel>
+            <Select
+              name="lab"
+              value={formData.lab}
+              onChange={handleInputChange}
+            >
+              {labs.map((labObj) => (
+                <MenuItem key={labObj.lab} value={labObj.lab}>
+                  {labObj.lab}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Categoría</InputLabel>
+            <Select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+            >
+              {categories.map((catObj) => (
+                <MenuItem key={catObj.category} value={catObj.category}>
+                  {catObj.category}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         <Typography variant="overline" sx={{ mt: 2 }}>
           Precios y Estado
         </Typography>

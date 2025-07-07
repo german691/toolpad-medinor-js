@@ -1,8 +1,8 @@
 import { api, handleServiceError } from "../api";
 
-export default async function getLabs() {
+export default async function getCategories() {
   try {
-    const response = await api.get("/labs");
+    const response = await api.get("/categories");
     return response;
   } catch (error) {
     handleServiceError(error);

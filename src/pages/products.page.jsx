@@ -8,8 +8,9 @@ import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
-import LabSelect from "../components/Select/LabSelect";
 import getLabs from "../services/labService";
+import getCategories from "../services/categoryService";
+import ItemSelect from "../components/Select/ItemSelect";
 
 export function ProductsPage() {
   const { fetchItems } = useCRUD();
@@ -18,6 +19,7 @@ export function ProductsPage() {
   const [isSnackOpen, setSnackOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState({});
   const [labs, setLabs] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const fetchLabs = async () => {
@@ -34,6 +36,25 @@ export function ProductsPage() {
       }
     };
     fetchLabs();
+  }, []);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        const formattedCats = response.data.items.map((catObj) => ({
+          value: catObj.category,
+          label: catObj.category,
+          key: catObj.category,
+        }));
+
+        console.log("formatted", formattedCats);
+        setCategories(formattedCats);
+      } catch (error) {
+        console.error("Error al cargar los laboratorios:", error);
+      }
+    };
+    fetchCategories();
   }, []);
 
   const productColumns = useMemo(
@@ -59,15 +80,28 @@ export function ProductsPage() {
       {
         accessor: "lab",
         header: "Laboratorio",
+        minWidth: 100,
+        editable: true,
+        type: "string",
+        renderEditCell: (params) => <ItemSelect {...params} options={labs} />,
+        render: (params) => {
+          const selectedOption = labs.find((opt) => opt.value === params.value);
+          return selectedOption ? selectedOption.label : params.value;
+        },
+      },
+      {
+        accessor: "category",
+        header: "Categorías",
         minWidth: 200,
         editable: true,
         type: "string",
-        // `renderEditCell` es una función que recibe `params` del DataGrid
-        // Y devuelve el componente `LabSelect` con sus props `params` y `options`
-        renderEditCell: (params) => <LabSelect {...params} options={labs} />,
-        // `render` se utiliza para mostrar el valor en modo de visualización
+        renderEditCell: (params) => (
+          <ItemSelect {...params} options={categories} />
+        ),
         render: (params) => {
-          const selectedOption = labs.find((opt) => opt.value === params.value);
+          const selectedOption = categories.find(
+            (opt) => opt.value === params.value
+          );
           return selectedOption ? selectedOption.label : params.value;
         },
       },
@@ -94,6 +128,11 @@ export function ProductsPage() {
         header: "P. Costo",
         minWidth: 100,
         editable: true,
+      },
+      {
+        accessor: "discount",
+        header: "Descuento",
+        minWidth: 100,
       },
       {
         accessor: "iva",

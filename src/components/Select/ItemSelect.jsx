@@ -2,7 +2,7 @@ import React from "react";
 import { FormControl, Autocomplete, TextField } from "@mui/material";
 import { useGridApiContext } from "@mui/x-data-grid";
 
-export default function LabSelect(props) {
+export default function ItemSelect(props) {
   const { id, field, value, options } = props;
 
   const apiRef = useGridApiContext();

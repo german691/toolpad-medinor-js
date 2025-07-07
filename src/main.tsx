@@ -8,6 +8,8 @@ import theme from "../theme";
 import clientsWrapper from "./pages/clients.page";
 import ProductsWrapper from "./pages/products.page";
 import LabsPage from "./pages/labs.page";
+import ClientMigrationPage from "./pages/clientsMigration.page";
+import ProductMigrationPage from "./pages/productsMigration.page";
 
 const router = createBrowserRouter([
   {
@@ -18,8 +20,16 @@ const router = createBrowserRouter([
         Component: Layout,
         children: [
           {
+            path: "clients/migration",
+            Component: ClientMigrationPage,
+          },
+          {
             path: "clients/crud",
             Component: clientsWrapper,
+          },
+          {
+            path: "products/migration",
+            Component: ProductMigrationPage,
           },
           {
             path: "products/crud",
