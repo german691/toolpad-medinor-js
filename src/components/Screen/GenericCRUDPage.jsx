@@ -7,8 +7,9 @@ import {
   IconButton,
   Stack,
   Tooltip,
+  Typography,
 } from "@mui/material";
-import { PageContainer } from "@toolpad/core/PageContainer";
+import { PageContainer, PageHeader } from "@toolpad/core/PageContainer";
 import { useCRUD } from "../../hooks/context/useCRUD";
 import {
   Add,
@@ -164,6 +165,7 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
           isFullScreen={isFullScreen}
           // el handler para que actúe al editar
           onEditChange={handleDataGridEditChange}
+          fetchItems={fetchItems}
         />
         {error && (
           <Alert

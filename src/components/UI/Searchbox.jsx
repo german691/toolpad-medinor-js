@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 
-export default function Searchbox({ setSearch }) {
+export default function Searchbox({ setSearch, overrideWidth }) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleInputChange = (event) => {
@@ -27,7 +27,7 @@ export default function Searchbox({ setSearch }) {
   };
 
   return (
-    <Box sx={{ width: "300px" }}>
+    <Box sx={{ width: overrideWidth || "300px", maxWidth: "100%" }}>
       <FormControl variant="outlined" fullWidth>
         <InputLabel size="small" htmlFor="outlined-adornment-password">
           Buscar

@@ -43,6 +43,7 @@ export const GenericDataGrid = ({
         minWidth: col.minWidth,
         flex: col.flex,
         editable: col.editable,
+        renderEditCell: col.renderEditCell,
       })),
     [columns]
   );

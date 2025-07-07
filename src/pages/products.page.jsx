@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ProductCreateDialog from "../components/Dialog/ProductCreateDialog";
 import {
   bulkUpdateProducts,
@@ -8,79 +8,8 @@ import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
-
-const productColumns = [
-  {
-    accessor: "code",
-    header: "Código",
-    width: 120,
-  },
-  {
-    accessor: "desc",
-    header: "Descripción",
-    flex: 1,
-    minWidth: 225,
-    editable: true,
-  },
-  {
-    accessor: "extra_desc",
-    header: "Descripción Adicional",
-    minWidth: 200,
-    editable: true,
-  },
-  {
-    accessor: "lab",
-    header: "Laboratorio",
-    minWidth: 200,
-    editable: true,
-  },
-  {
-    accessor: "notes",
-    header: "Notas",
-    minWidth: 150,
-    editable: true,
-  },
-  {
-    accessor: "medinor_price",
-    header: "P. Medinor",
-    minWidth: 100,
-    editable: true,
-  },
-  {
-    accessor: "public_price",
-    header: "P. Público",
-    minWidth: 100,
-    editable: true,
-  },
-  {
-    accessor: "price",
-    header: "P. Costo",
-    minWidth: 100,
-    editable: true,
-  },
-  {
-    accessor: "iva",
-    header: "IVA",
-    type: "boolean",
-    width: 60,
-    align: "center",
-    editable: true,
-  },
-  {
-    accessor: "listed",
-    header: "Visible",
-    type: "boolean",
-    minWidth: 60,
-    align: "center",
-    editable: true,
-  },
-  {
-    accessor: "createdAt",
-    header: "F. Creación",
-    width: 100,
-    render: (row) => new Date(row.createdAt).toLocaleDateString(),
-  },
-];
+import LabSelect from "../components/Select/LabSelect";
+import getLabs from "../services/labService";
 
 export function ProductsPage() {
   const { fetchItems } = useCRUD();
@@ -88,6 +17,109 @@ export function ProductsPage() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [isSnackOpen, setSnackOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState({});
+  const [labs, setLabs] = useState([]);
+
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        const response = await getLabs();
+        const formattedLabs = response.data.items.map((labObj) => ({
+          value: labObj.lab,
+          label: labObj.lab,
+          key: labObj.lab,
+        }));
+        setLabs(formattedLabs);
+      } catch (error) {
+        console.error("Error al cargar los laboratorios:", error);
+      }
+    };
+    fetchLabs();
+  }, []);
+
+  const productColumns = useMemo(
+    () => [
+      {
+        accessor: "code",
+        header: "Código",
+        width: 120,
+      },
+      {
+        accessor: "desc",
+        header: "Descripción",
+        flex: 1,
+        minWidth: 225,
+        editable: true,
+      },
+      {
+        accessor: "extra_desc",
+        header: "Descripción Adicional",
+        minWidth: 200,
+        editable: true,
+      },
+      {
+        accessor: "lab",
+        header: "Laboratorio",
+        minWidth: 200,
+        editable: true,
+        type: "string",
+        // `renderEditCell` es una función que recibe `params` del DataGrid
+        // Y devuelve el componente `LabSelect` con sus props `params` y `options`
+        renderEditCell: (params) => <LabSelect {...params} options={labs} />,
+        // `render` se utiliza para mostrar el valor en modo de visualización
+        render: (params) => {
+          const selectedOption = labs.find((opt) => opt.value === params.value);
+          return selectedOption ? selectedOption.label : params.value;
+        },
+      },
+      {
+        accessor: "notes",
+        header: "Notas",
+        minWidth: 150,
+        editable: true,
+      },
+      {
+        accessor: "medinor_price",
+        header: "P. Medinor",
+        minWidth: 100,
+        editable: true,
+      },
+      {
+        accessor: "public_price",
+        header: "P. Público",
+        minWidth: 100,
+        editable: true,
+      },
+      {
+        accessor: "price",
+        header: "P. Costo",
+        minWidth: 100,
+        editable: true,
+      },
+      {
+        accessor: "iva",
+        header: "IVA",
+        type: "boolean",
+        width: 60,
+        align: "center",
+        editable: true,
+      },
+      {
+        accessor: "listed",
+        header: "Visible",
+        type: "boolean",
+        minWidth: 60,
+        align: "center",
+        editable: true,
+      },
+      {
+        accessor: "createdAt",
+        header: "F. Creación",
+        width: 100,
+        render: (row) => new Date(row.createdAt).toLocaleDateString(),
+      },
+    ],
+    [labs]
+  );
 
   const handleAddProduct = () => {
     setCreateDialogOpen(true);
@@ -120,7 +152,7 @@ export function ProductsPage() {
     let response;
     try {
       response = await bulkUpdateProducts(productData);
-      if (response.status == 207) {
+      if (response.status === 207) {
         setStatusMessage({
           title: "Precaución: ",
           message:
@@ -131,7 +163,7 @@ export function ProductsPage() {
         });
       } else {
         console.log(response.data.updatedCount, response);
-        response.data.updatedCount == 1
+        response.data.updatedCount === 1
           ? setStatusMessage({
               title: "Producto actualizado con éxito",
             })
@@ -176,7 +208,8 @@ export function ProductsPage() {
         open={isSnackOpen}
         autoHideDuration={6000}
         onClose={() => {
-          setSnackOpen(false), setStatusMessage({});
+          setSnackOpen(false);
+          setStatusMessage({});
         }}
       >
         <Alert
