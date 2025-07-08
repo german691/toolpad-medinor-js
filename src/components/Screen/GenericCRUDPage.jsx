@@ -48,8 +48,7 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
 
   const handleRefresh = useCallback(() => {
     setSearch("");
-    fetchItems();
-  });
+  }, [setSearch]);
 
   const handleDataGridCancelChanges = useCallback(() => {
     setHasChanges(false);

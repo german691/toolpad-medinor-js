@@ -92,7 +92,7 @@ export function ProductsPage() {
       {
         accessor: "category",
         header: "Categorías",
-        minWidth: 200,
+        minWidth: 135,
         editable: true,
         type: "string",
         renderEditCell: (params) => (
@@ -104,12 +104,6 @@ export function ProductsPage() {
           );
           return selectedOption ? selectedOption.label : params.value;
         },
-      },
-      {
-        accessor: "notes",
-        header: "Notas",
-        minWidth: 150,
-        editable: true,
       },
       {
         accessor: "medinor_price",

@@ -98,14 +98,14 @@ export const CRUDProvider = ({ children, services }) => {
   const [state, dispatch] = useReducer(crudReducer, initialState);
 
   const { getItems, getItemById, createItem, updateItem } = services;
+  const fetchItems = async () => {
+    if (state.loading) return;
 
-  const fetchItems = useCallback(async () => {
     if (!getItems) return;
     dispatch({ type: ACTION_TYPES.FETCH_START });
     try {
       const { page, limit } = state.pagination;
       const { filters, sort, search } = state;
-      console.log(state);
       const data = await getItems({ page, limit, filters, sort, search });
       dispatch({
         type: ACTION_TYPES.FETCH_ITEMS_SUCCESS,
@@ -114,14 +114,7 @@ export const CRUDProvider = ({ children, services }) => {
     } catch (error) {
       dispatch({ type: ACTION_TYPES.FETCH_ERROR, payload: error });
     }
-  }, [
-    state.pagination.page,
-    state.pagination.limit,
-    state.filters,
-    state.sort,
-    state.search,
-    getItems,
-  ]);
+  };
 
   const fetchItemById = useCallback(
     async (id) => {
@@ -210,7 +203,13 @@ export const CRUDProvider = ({ children, services }) => {
 
   useEffect(() => {
     fetchItems();
-  }, [fetchItems]);
+  }, [
+    state.pagination.page,
+    state.pagination.limit,
+    state.filters,
+    state.sort,
+    state.search,
+  ]);
 
   const value = {
     ...state,
