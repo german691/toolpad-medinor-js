@@ -177,25 +177,45 @@ export const CRUDProvider = ({ children, services }) => {
     [updateItem, fetchItems]
   );
 
-  const setPage = useCallback((page) => {
-    dispatch({ type: ACTION_TYPES.SET_PAGE, payload: page });
-  }, []);
+  const setPage = useCallback(
+    (page) => {
+      if (state.loading) return;
+      dispatch({ type: ACTION_TYPES.SET_PAGE, payload: page });
+    },
+    [state.loading]
+  );
 
-  const setLimit = useCallback((limit) => {
-    dispatch({ type: ACTION_TYPES.SET_LIMIT, payload: limit });
-  }, []);
+  const setLimit = useCallback(
+    (limit) => {
+      if (state.loading) return;
+      dispatch({ type: ACTION_TYPES.SET_LIMIT, payload: limit });
+    },
+    [state.loading]
+  );
 
-  const setSort = useCallback((sort) => {
-    dispatch({ type: ACTION_TYPES.SET_SORT, payload: sort });
-  }, []);
+  const setSort = useCallback(
+    (sort) => {
+      if (state.loading) return;
+      dispatch({ type: ACTION_TYPES.SET_SORT, payload: sort });
+    },
+    [state.loading]
+  );
 
-  const setFilters = useCallback((filters) => {
-    dispatch({ type: ACTION_TYPES.SET_FILTERS, payload: filters });
-  }, []);
+  const setFilters = useCallback(
+    (filters) => {
+      if (state.loading) return;
+      dispatch({ type: ACTION_TYPES.SET_FILTERS, payload: filters });
+    },
+    [state.loading]
+  );
 
-  const setSearch = useCallback((search) => {
-    dispatch({ type: ACTION_TYPES.SET_SEARCH, payload: search });
-  }, []);
+  const setSearch = useCallback(
+    (search) => {
+      if (state.loading) return;
+      dispatch({ type: ACTION_TYPES.SET_SEARCH, payload: search });
+    },
+    [state.loading]
+  );
 
   const clearError = useCallback(() => {
     dispatch({ type: ACTION_TYPES.CLEAR_ERROR });
