@@ -124,11 +124,13 @@ export default function LoginPage() {
               sx={{ mt: 3, mb: 2, py: 1.5 }}
               disabled={authStatus === "loading"}
             >
-              {authStatus === "loading" ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "Ingresar"
-              )}
+              <Typography>
+                {authStatus === "loading" ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Ingresar"
+                )}
+              </Typography>
             </Button>
           </Box>
         </Paper>

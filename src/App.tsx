@@ -15,6 +15,7 @@ import {
   LibraryAdd,
   Science,
   Sell,
+  Image,
 } from "@mui/icons-material";
 
 const NAVIGATION: Navigation = [
@@ -58,11 +59,12 @@ const NAVIGATION: Navigation = [
         title: "Gestión",
         icon: <Edit />,
       },
+
       {
-        segment: "labs",
-        title: "Laboratorios",
-        icon: <Science />,
-      },
+        segment: "images",
+        title: "Imágenes",
+        icon: <Image />
+      }
     ],
   },
   {

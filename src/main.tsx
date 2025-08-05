@@ -20,6 +20,8 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import UnauthorizedPage from "./pages/unaoutorized.page";
 import NotFoundPage from "./pages/notfound.page";
+import ImagesPage from "./pages/images.page";
+import ProductsImageWrapper from "./pages/images.page";
 
 const router = createBrowserRouter([
   {
@@ -70,7 +72,13 @@ const router = createBrowserRouter([
                 ),
                 children: [{ index: true, Component: LabsPage }],
               },
-
+              {
+                path: "products/images",
+                element: (
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                ),
+                children: [{ index: true, Component: ProductsImageWrapper }],
+              },
               {
                 path: "clients/migration",
                 element: <ProtectedRoute allowedRoles={["superadmin"]} />,

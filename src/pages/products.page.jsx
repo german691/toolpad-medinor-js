@@ -51,7 +51,7 @@ export function ProductsPage() {
         console.log("formatted", formattedCats);
         setCategories(formattedCats);
       } catch (error) {
-        console.error("Error al cargar los laboratorios:", error);
+        console.error("Error al cargar las categorías:", error);
       }
     };
     fetchCategories();
