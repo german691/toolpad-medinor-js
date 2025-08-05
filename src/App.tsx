@@ -14,14 +14,13 @@ import {
   Edit,
   LibraryAdd,
   Science,
-  AddShoppingCart,
   Sell,
 } from "@mui/icons-material";
 
 const NAVIGATION: Navigation = [
   {
     kind: "header",
-    title: "Main items",
+    title: "Clientes",
   },
   {
     segment: "clients",

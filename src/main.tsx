@@ -1,6 +1,10 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 import App from "./App";
 import Layout from "./layouts/dashboard";
 import { CssBaseline, ThemeProvider } from "@mui/material";
@@ -10,34 +14,74 @@ import ProductsWrapper from "./pages/products.page";
 import LabsPage from "./pages/labs.page";
 import ClientMigrationPage from "./pages/clientsMigration.page";
 import ProductMigrationPage from "./pages/productsMigration.page";
+import ProtectedRoute from "./components/ProtectedRoute";
+import LoginPage from "./pages/login.page";
+import { Provider } from "react-redux";
+import { store } from "./store";
+import UnauthorizedPage from "./pages/unaoutorized.page";
+import NotFoundPage from "./pages/notfound.page";
 
 const router = createBrowserRouter([
   {
-    Component: App,
+    path: "/login",
+    Component: LoginPage,
+  },
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
+  {
+    path: "/",
+    element: <App />,
     children: [
       {
-        path: "/",
-        Component: Layout,
+        element: <ProtectedRoute />,
         children: [
           {
-            path: "clients/migration",
-            Component: ClientMigrationPage,
-          },
-          {
-            path: "clients/crud",
-            Component: clientsWrapper,
-          },
-          {
-            path: "products/migration",
-            Component: ProductMigrationPage,
-          },
-          {
-            path: "products/crud",
-            Component: ProductsWrapper,
-          },
-          {
-            path: "products/labs",
-            Component: LabsPage,
+            element: <Layout />,
+            children: [
+              {
+                index: true,
+                element: <Navigate to="/clients/crud" replace />,
+              },
+
+              {
+                path: "clients/crud",
+                element: (
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                ),
+                children: [{ index: true, Component: clientsWrapper }],
+              },
+              {
+                path: "products/crud",
+                element: (
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                ),
+                children: [{ index: true, Component: ProductsWrapper }],
+              },
+              {
+                path: "products/labs",
+                element: (
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                ),
+                children: [{ index: true, Component: LabsPage }],
+              },
+
+              {
+                path: "clients/migration",
+                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
+                children: [{ index: true, Component: ClientMigrationPage }],
+              },
+              {
+                path: "products/migration",
+                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
+                children: [{ index: true, Component: ProductMigrationPage }],
+              },
+            ],
           },
         ],
       },
@@ -46,8 +90,10 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
-    <RouterProvider router={router} />
-  </ThemeProvider>
+  <Provider store={store}>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  </Provider>
 );

@@ -10,11 +10,9 @@ export const api = axios.create({
   },
 });
 
-// ver cómo manejar esto desde el back en un futuro
-// cuando se implemente el wrapper de autenticación para toolpad
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("jwtToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

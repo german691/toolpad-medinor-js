@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   IconButton,
+  Snackbar,
   Stack,
   Tooltip,
   Typography,
@@ -38,11 +39,9 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
     setSearch,
   } = useCRUD();
 
-  /* Manejo de pantalla completa */
   const [isFullScreen, setIsFullScreen] = useState(false);
   const handleToggleFullScreen = () => setIsFullScreen((prev) => !prev);
 
-  /* Manejo de pantalla completa */
   const [hasChanges, setHasChanges] = useState(false);
   const [modifiedRows, setModifiedRows] = useState({});
 
@@ -53,14 +52,14 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
   const handleDataGridCancelChanges = useCallback(() => {
     setHasChanges(false);
     setModifiedRows({});
-  });
+  }, []);
 
   const handleDataGridEditChange = useCallback((newRow, oldRow) => {
     const hasRowChanged = JSON.stringify(newRow) !== JSON.stringify(oldRow);
     if (hasRowChanged) {
       setHasChanges(true);
-      setModifiedRows((prevModifiedRows) => ({
-        ...prevModifiedRows,
+      setModifiedRows((prev) => ({
+        ...prev,
         [newRow._id]: newRow,
       }));
     }
@@ -87,36 +86,31 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
       }}
     >
       <Stack direction="row" spacing={2}>
-        {/* Actualizar */}
-        <Tooltip title="Actualizar" arrow text="">
+        <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>
             <Refresh />
           </IconButton>
         </Tooltip>
-        {/* Pantalla completa */}
-        <Tooltip title="Pantalla completa" arrow text="">
+        <Tooltip title="Pantalla completa" arrow>
           <IconButton onClick={handleToggleFullScreen}>
             {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
           </IconButton>
         </Tooltip>
-        {/* Cancelar edición */}
-        <IconButton
-          onClick={handleDataGridCancelChanges}
-          disabled={!hasChanges}
-        >
-          <Tooltip title="Cancelar" arrow text="">
+        <Tooltip title="Cancelar" arrow>
+          <IconButton
+            onClick={handleDataGridCancelChanges}
+            disabled={!hasChanges}
+          >
             <Cancel />
-          </Tooltip>
-        </IconButton>
-        {/* Guardar cambios */}
-        <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
-          <Tooltip title="Guardar cambios" arrow text="">
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Guardar cambios" arrow>
+          <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
             <Save />
-          </Tooltip>
-        </IconButton>
-        {/* Buscador */}
+          </IconButton>
+        </Tooltip>
       </Stack>
-      <Stack direction="row" spacing={2} size="small">
+      <Stack direction="row" spacing={2}>
         <Searchbox setSearch={setSearch} />
         <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
           Crear {entityName}
@@ -162,30 +156,14 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
           sort={sort}
           onSortChange={setSort}
           isFullScreen={isFullScreen}
-          // el handler para que actúe al editar
           onEditChange={handleDataGridEditChange}
           fetchItems={fetchItems}
         />
-        {error && (
-          <Alert
-            severity="error"
-            action={
-              <IconButton
-                aria-label="close"
-                color="inherit"
-                size="small"
-                onClick={clearError}
-              >
-                <Close fontSize="inherit" />
-              </IconButton>
-            }
-          >
-            <AlertTitle>
-              {error?.message ||
-                `Ocurrió un error inesperado al cargar los ${entityName}s.`}
-            </AlertTitle>
+        <Snackbar open={error} autoHideDuration={6000} onClose={clearError}>
+          <Alert severity="error" onClose={clearError} sx={{ width: "100%" }}>
+            {error?.message}
           </Alert>
-        )}
+        </Snackbar>
       </Box>
     </PageContainer>
   );
