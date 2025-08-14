@@ -1,173 +1,361 @@
-import { useState, useCallback } from "react";
-import { Box, Typography, Button, Grid, Badge, Paper } from "@mui/material";
+import { useState, useCallback, useMemo } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Paper,
+  CircularProgress,
+  IconButton,
+  Stack,
+  Dialog,
+  DialogContent,
+} from "@mui/material";
 import { useDropzone } from "react-dropzone";
-import { AddPhotoAlternate } from "@mui/icons-material";
+import {
+  AddPhotoAlternate,
+  CloudUpload,
+  Delete,
+  HighlightOff,
+  Close,
+} from "@mui/icons-material";
 
 import SelectionDialog from "./SelectionDialog";
 import CroppingDialog from "./CroppingDialog";
 
-export default function MultiImageManager() {
-  const [images, setImages] = useState([]);
+export default function MultiImageManager({
+  selectedProduct,
+  existingImages = [],
+  newImages = [],
+  onProcessingComplete,
+  onUpload,
+  onDeleteExisting,
+  onDeleteNew,
+  isLoading,
+  isUploading,
+}) {
+  const [localFiles, setLocalFiles] = useState([]);
   const [selectionModalOpen, setSelectionModalOpen] = useState(false);
   const [croppingModalOpen, setCroppingModalOpen] = useState(false);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
+
+  const allImages = useMemo(
+    () => [
+      ...existingImages.map((img) => ({
+        ...img,
+        id: img.id, // Corrección: Usar `img.id` de los datos de la API
+        isNew: false,
+        role: img.isMain ? "principal" : "secundaria",
+      })),
+      ...newImages.map((img) => ({
+        ...img,
+        isNew: true,
+        isMain: img.role === "principal",
+        role: img.role || "secundaria",
+      })),
+    ],
+    [existingImages, newImages]
+  );
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles?.length) {
-      window.focus();
-      handleReset();
-      const newImages = acceptedFiles.map((file, index) => ({
+      handleResetLocal();
+      const filesToProcess = acceptedFiles.map((file, index) => ({
         id: Date.now() + index,
         file,
         originalSrc: URL.createObjectURL(file),
         role: null,
-        crop: undefined,
-        completedCrop: null,
         croppedSrc: null,
       }));
-      setImages(newImages);
+      setLocalFiles(filesToProcess);
       setSelectionModalOpen(true);
-      window.focus();
     }
   }, []);
 
   const handleSelectionComplete = ({ primaryId, workflowChoice }) => {
-    const imagesWithRoles = images.map((img) => ({
+    const imagesWithRoles = localFiles.map((img) => ({
       ...img,
       role: img.id === primaryId ? "principal" : "secundaria",
     }));
-    setImages(imagesWithRoles);
+    setLocalFiles(imagesWithRoles);
     setSelectionModalOpen(false);
 
     if (workflowChoice === "crop") {
       setCroppingModalOpen(true);
     } else if (workflowChoice === "save") {
-      setImages(
-        imagesWithRoles.map((img) => ({ ...img, croppedSrc: img.originalSrc }))
-      );
+      const imagesToSave = imagesWithRoles.map((img) => ({
+        ...img,
+        croppedSrc: img.originalSrc,
+      }));
+
+      console.log("Guardando directamente. Imágenes procesadas:", imagesToSave);
+
+      onProcessingComplete(imagesToSave);
+      handleResetLocal();
     }
   };
 
   const handleCroppingComplete = (processedImages) => {
-    setImages(processedImages);
+    onProcessingComplete(processedImages);
     setCroppingModalOpen(false);
+    handleResetLocal();
   };
 
-  const handleReset = () => {
-    images.forEach((img) => URL.revokeObjectURL(img.originalSrc));
-    setImages([]);
+  const handleResetLocal = () => {
+    localFiles.forEach((img) => URL.revokeObjectURL(img.originalSrc));
+    setLocalFiles([]);
     setSelectionModalOpen(false);
     setCroppingModalOpen(false);
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
-  const croppedImages = images.filter((img) => img.croppedSrc);
+  const handleClearNewImages = () => {
+    newImages.forEach((img) => onDeleteNew(img.id));
+  };
+
+  const handleImageClick = useCallback((imageSrc) => {
+    setFullScreenImage(imageSrc);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "image/*": [".jpeg", ".jpg", ".png", ".webp"] },
+    disabled: !selectedProduct || isUploading,
+  });
 
   const dropzoneStyles = {
     display: "flex",
     width: "100%",
-    padding: 2,
-    borderRadius: 3,
-    overflow: "hidden",
-    height: "72vh",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "column",
     fontWeight: 600,
-    border: `2px dashed ${isDragActive ? "#4caf50" : "gray"}`,
+    border: `2px dashed ${isDragActive ? "primary.main" : "grey.500"}`,
     textAlign: "center",
-    color: isDragActive ? "#4caf50" : "gray",
-    background: isDragActive ? "#c8e6c963" : "#d3d3d325",
+    color: isDragActive ? "primary.main" : "text.secondary",
+    bgcolor: isDragActive ? "action.hover" : "transparent",
     cursor: "pointer",
-    transition: "all .24s ease-in-out, background-color .24s ease-in-out",
+    transition: "all .24s ease-in-out",
+    borderRadius: 2,
   };
 
+  if (!selectedProduct) {
+    return (
+      <Paper variant="outlined" sx={{ ...dropzoneStyles }}>
+        <Typography variant="h6">Seleccione un Producto</Typography>
+        <Typography variant="body2">
+          Elija un producto de la tabla para ver y administrar sus imágenes.
+        </Typography>
+      </Paper>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Paper
+        variant="outlined"
+        sx={{ ...dropzoneStyles, cursor: "default", borderStyle: "solid" }}
+      >
+        <CircularProgress />
+        <Typography sx={{ mt: 2 }}>Cargando Imágenes...</Typography>
+      </Paper>
+    );
+  }
+
   return (
-    <Box>
-      {croppedImages.length === 0 ? (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Stack direction={"row"} justifyContent={"space-between"}>
+        <Typography sx={{ mb: 2, fontWeight: 500 }}>
+          {selectedProduct.desc}
+        </Typography>
+        <Typography sx={{ color: "grey.800" }}>
+          Imágenes: {allImages.length}
+        </Typography>
+      </Stack>
+
+      {allImages.length === 0 ? (
         <Box {...getRootProps()} sx={dropzoneStyles}>
           <input {...getInputProps()} />
-          <AddPhotoAlternate sx={{ fontSize: 40, mb: 1 }} />
-          <Typography>Agregar Imágenes</Typography>
+          <AddPhotoAlternate sx={{ fontSize: 48, mb: 1 }} />
+          <Typography>Arrastre imágenes o haga clic para agregar</Typography>
         </Box>
       ) : (
-        <Paper
+        <Box sx={{ flex: 1, overflowY: "auto", pr: 1, mr: -1 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+              gap: 1.5,
+            }}
+          >
+            {allImages.map((img, index) => (
+              <Box
+                key={img.id || index}
+                sx={{ position: "relative", cursor: "pointer" }}
+                onClick={() =>
+                  handleImageClick(img.isNew ? img.croppedSrc : img.url)
+                }
+              >
+                <img
+                  src={img.isNew ? img.croppedSrc : img.url}
+                  alt={img.role || "Imagen de producto"}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    aspectRatio: "1 / 1",
+                    objectFit: "cover",
+                    borderRadius: "8px",
+                    outline: "1px solid rgba(0,0,0,0.1)",
+                    outlineOffset: "-1px",
+                  }}
+                />
+                <Typography
+                  sx={{
+                    position: "absolute",
+                    bottom: 4,
+                    left: 6,
+                    bgcolor: `${img.isMain ? "#1976d2" : "rgba(0,0,0,0.6)"}`,
+                    color: "white",
+                    px: 1,
+                    py: "2px",
+                    borderRadius: "4px",
+                    fontSize: "0.7rem",
+                  }}
+                >
+                  {img.isMain ? "Principal" : "Secundaria"}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    img.isNew ? onDeleteNew(img.id) : onDeleteExisting(img.id);
+                  }}
+                  sx={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    bgcolor: "rgba(255,255,255,0.8)",
+                    "&:hover": { bgcolor: "white" },
+                  }}
+                >
+                  <Delete fontSize="small" color="#000" />
+                </IconButton>
+              </Box>
+            ))}
+
+            <Box
+              {...getRootProps()}
+              sx={{
+                ...dropzoneStyles,
+                aspectRatio: "1 / 1",
+                border: "2px dashed",
+                borderColor: "grey.500",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <input {...getInputProps()} />
+              <AddPhotoAlternate sx={{ fontSize: 32 }} />
+              <Typography variant="caption">Añadir más</Typography>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
+        <Button
+          onClick={onUpload}
+          fullWidth
+          variant="contained"
+          startIcon={
+            isUploading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <CloudUpload />
+            )
+          }
+          disabled={newImages.length === 0 || isUploading}
+        >
+          {isUploading ? "Subiendo..." : `Subir ${newImages.length} Imágenes`}
+        </Button>
+        <Button
+          onClick={handleClearNewImages}
+          fullWidth
           variant="outlined"
-          sx={{
-            p: 2,
-            borderRadius: "8px",
-            height: "72vh",
+          color="error"
+          startIcon={<HighlightOff />}
+          disabled={newImages.length === 0 || isUploading}
+        >
+          Limpiar Nuevas
+        </Button>
+      </Box>
+
+      <Dialog
+        open={!!fullScreenImage}
+        onClose={() => setFullScreenImage(null)}
+        PaperProps={{
+          sx: {
+            backgroundColor: "transparent",
+            boxShadow: "none",
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent
+          sx={{
+            p: 0,
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          <Typography sx={{ mb: 2, fontWeight: 500 }}>
-            Imágenes Cargadas
-          </Typography>
-
-          <Box sx={{ flex: 1, overflow: "auto" }}>
-            <Grid container spacing={1}>
-              {croppedImages.map((img) => (
-                <Grid item key={img.id} xs={6}>
-                  <Box sx={{ display: "flex", position: "relative" }}>
-                    <img
-                      src={img.croppedSrc}
-                      alt="thumbnail"
-                      style={{
-                        width: "100%",
-                        borderRadius: "8px",
-                        outline: "1px solid rgba(0, 0, 0, 0.1)",
-                        outlineOffset: "-1px",
-                      }}
-                    />
-                    <Badge
-                      color={img.role === "principal" ? "primary" : "secondary"}
-                      anchorOrigin={{ vertical: "top", horizontal: "left" }}
-                      badgeContent={
-                        img.role === "principal" ? "Principal" : "Secundario"
-                      }
-                      sx={{
-                        position: "absolute",
-                        top: 8,
-                        left: 8,
-                        "& .MuiBadge-badge": {
-                          transform: "none",
-                          borderRadius: "6px",
-                          padding: "0 6px",
-                          fontSize: "0.75rem",
-                        },
-                      }}
-                    />
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-
-          <Button
-            onClick={handleReset}
-            fullWidth
-            variant="outlined"
-            color="error"
-            sx={{ mt: 2 }}
+          <img
+            src={fullScreenImage}
+            alt="Imagen en pantalla completa"
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              display: "block",
+              objectFit: "contain",
+            }}
+          />
+          <IconButton
+            sx={{ position: "absolute", top: 8, right: 8, color: "white" }}
+            onClick={() => setFullScreenImage(null)}
           >
-            Limpiar
-          </Button>
-        </Paper>
-      )}
+            <Close />
+          </IconButton>
+        </DialogContent>
+      </Dialog>
 
       <SelectionDialog
         open={selectionModalOpen}
         onClose={() => setSelectionModalOpen(false)}
-        images={images}
+        images={localFiles}
         onComplete={handleSelectionComplete}
       />
       <CroppingDialog
         open={croppingModalOpen}
         onClose={() => setCroppingModalOpen(false)}
-        images={images}
+        images={localFiles}
         onComplete={handleCroppingComplete}
         aspect={1 / 1}
       />
-    </Box>
+    </Paper>
   );
 }

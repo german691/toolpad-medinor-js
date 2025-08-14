@@ -42,7 +42,7 @@ export function ImagesPage() {
     setLimit,
     setSort,
     setSearch,
-    refresh,
+    refresh, // Asumimos que useCRUD provee una función para refrescar
   } = useCRUD();
 
   const handleRefresh = useCallback(() => {
@@ -53,12 +53,14 @@ export function ImagesPage() {
   const [labs, setLabs] = useState([]);
   const [categories, setCategories] = useState([]);
 
+  // --- ESTADO CENTRALIZADO ---
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [existingImages, setExistingImages] = useState([]);
-  const [newImages, setNewImages] = useState([]);
+  const [newImages, setNewImages] = useState([]); // Imágenes locales listas para subir
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Efectos para cargar datos auxiliares (Laboratorios y Categorías)
   useEffect(() => {
     const fetchLabs = async () => {
       try {
@@ -93,6 +95,7 @@ export function ImagesPage() {
     fetchCategories();
   }, []);
 
+  // Efecto principal: Carga las imágenes cuando se selecciona un producto
   useEffect(() => {
     if (!selectedProduct) {
       setExistingImages([]);
@@ -104,6 +107,7 @@ export function ImagesPage() {
       setImagesLoading(true);
       setNewImages([]);
       try {
+        // La API debe devolver imágenes con una estructura como { _id, url, role }
         const images = await getProductImages(selectedProduct._id);
         setExistingImages(images);
       } catch (error) {
@@ -117,26 +121,32 @@ export function ImagesPage() {
     fetchImages();
   }, [selectedProduct]);
 
+  // --- FUNCIONES CONTROLADORAS ---
+
   const handleRowClick = (params) => {
     if (selectedProduct?._id === params.row._id) {
-      setSelectedProduct(null);
+      setSelectedProduct(null); // Deseleccionar si se hace clic de nuevo
     } else {
       setSelectedProduct(params.row);
     }
   };
 
+  // Recibe las imágenes procesadas desde MultiImageManager
   const handleProcessingComplete = (processedImages) => {
-    console.log("Recibiendo imágenes procesadas:", processedImages);
+    // Estas son las nuevas imágenes listas para ser subidas
     setNewImages((prev) => [...prev, ...processedImages]);
   };
 
+  // Sube las nuevas imágenes al servidor
   const handleUpload = async () => {
     if (!selectedProduct || newImages.length === 0) return;
     setUploading(true);
     try {
+      // `uploadImages` debe aceptar el ID del producto y un array de archivos/blobs
       await uploadImages(selectedProduct._id, newImages);
-      setNewImages([]);
+      setNewImages([]); // Limpiar las imágenes locales
 
+      // Volver a cargar las imágenes existentes para mostrar las recién subidas
       const updatedImages = await getProductImages(selectedProduct._id);
       setExistingImages(updatedImages);
 
@@ -149,24 +159,25 @@ export function ImagesPage() {
     }
   };
 
+  // Borra una imagen existente
   const handleDeleteExisting = async (imageId) => {
     if (!selectedProduct) return;
     try {
-      console.log("Intentando eliminar imagen con ID:", imageId); // Añadido para depuración
       await deleteProductImage(selectedProduct._id, imageId);
-      // Filtra el estado basándose en la propiedad `_id` original
-      // Esto es más seguro si tu backend sigue usando `_id`
       setExistingImages((prev) => prev.filter((img) => img._id !== imageId));
+      alert("Imagen borrada (simulado).");
     } catch (err) {
       console.error("Error al borrar la imagen", err);
       alert("Error al borrar la imagen.");
     }
   };
 
+  // Borra una imagen nueva (local) antes de subirla
   const handleDeleteNew = (imageId) => {
     setNewImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
+  // --- LÓGICA DE LA TABLA (Sin cambios) ---
   const productColumns = useMemo(
     () => [
       { field: "code", headerName: "Código", width: 120 },
@@ -175,19 +186,16 @@ export function ImagesPage() {
         field: "lab",
         headerName: "Laboratorio",
         minWidth: 100,
-        renderCell: (params) => {
-          const lab = labs.find((l) => l.value === params.value);
-          return lab ? lab.label : params.value;
-        },
+        valueGetter: (params) =>
+          labs.find((l) => l.value === params.value)?.label || params.value,
       },
       {
         field: "category",
         headerName: "Categoría",
         minWidth: 135,
-        renderCell: (params) => {
-          const category = categories.find((c) => c.value === params.value);
-          return category ? category.label : params.value;
-        },
+        valueGetter: (params) =>
+          categories.find((c) => c.value === params.value)?.label ||
+          params.value,
       },
       {
         field: "image",
@@ -199,6 +207,7 @@ export function ImagesPage() {
     ],
     [labs, categories]
   );
+
   const noRowsMessage = error
     ? `Error: ${error.message}`
     : "No se encontraron resultados.";
@@ -223,7 +232,7 @@ export function ImagesPage() {
 
   function ToolBox() {
     return (
-      <Stack direction="row" sx={{ mb: 2 }} spacing={1}>
+      <Stack direction="row" sx={{ mb: 2 }}>
         <Searchbox setSearch={setSearch} />
         <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>

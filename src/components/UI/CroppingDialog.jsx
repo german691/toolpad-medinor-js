@@ -35,15 +35,16 @@ function centerAspectCrop(mediaWidth, mediaHeight, aspect = 1) {
  * @param {number | null} targetWidth El ancho final deseado en píxeles.
  * @returns {Promise<string>} La URL de datos de la imagen final.
  */
-function getCroppedImg(image, crop, targetWidth = null) {
+function getCroppedImg(image, crop) {
   return new Promise((resolve, reject) => {
-    const cropCanvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas");
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    cropCanvas.width = Math.ceil(crop.width * scaleX);
-    cropCanvas.height = Math.ceil(crop.height * scaleY);
-    const ctx = cropCanvas.getContext("2d");
 
+    canvas.width = Math.ceil(crop.width * scaleX);
+    canvas.height = Math.ceil(crop.height * scaleY);
+
+    const ctx = canvas.getContext("2d");
     if (!ctx) {
       reject(new Error("No se pudo obtener el contexto 2D del canvas."));
       return;
@@ -58,62 +59,27 @@ function getCroppedImg(image, crop, targetWidth = null) {
       crop.height * scaleY,
       0,
       0,
-      cropCanvas.width,
-      cropCanvas.height
+      canvas.width,
+      canvas.height
     );
 
-    if (!targetWidth) {
-      resolve(cropCanvas.toDataURL("image/png"));
-      return;
-    }
-
-    const resizeCanvas = document.createElement("canvas");
-    const cropAspectRatio = cropCanvas.width / cropCanvas.height;
-    resizeCanvas.width = targetWidth;
-    resizeCanvas.height = Math.ceil(targetWidth / cropAspectRatio);
-    const resizeCtx = resizeCanvas.getContext("2d");
-
-    if (!resizeCtx) {
-      reject(
-        new Error(
-          "No se pudo obtener el contexto 2D del canvas de redimensionamiento."
-        )
-      );
-      return;
-    }
-
-    resizeCtx.imageSmoothingQuality = "high";
-    resizeCtx.drawImage(
-      cropCanvas,
-      0,
-      0,
-      resizeCanvas.width,
-      resizeCanvas.height
-    );
-
-    resolve(resizeCanvas.toDataURL("image/png"));
+    resolve(canvas.toDataURL("image/png"));
   });
 }
-
-// --- COMPONENTE ---
-
 export default function CroppingDialog({
   open,
   onClose,
   images,
   onComplete,
-  aspect = 16 / 9,
+  aspect = 1 / 1,
 }) {
   const [localImages, setLocalImages] = useState([]);
   const [activeImageId, setActiveImageId] = useState(null);
-  const [targetResolution, setTargetResolution] = useState(null); // Estado para la resolución
   const imgRef = useRef(null);
 
   const activeImage = localImages.find((img) => img.id === activeImageId);
   const allCropped =
     localImages.length > 0 && localImages.every((img) => img.croppedSrc);
-
-  const RESOLUTIONS = [256, 328, 512, 768, 1024];
 
   useEffect(() => {
     if (open) {
@@ -122,35 +88,27 @@ export default function CroppingDialog({
       setActiveImageId(
         principalImage ? principalImage.id : images[0]?.id || null
       );
-      setTargetResolution(null); // Resetea la resolución al abrir
     }
   }, [open, images]);
 
   const handleConfirmCrop = async () => {
     if (!activeImage?.completedCrop || !imgRef.current) return;
 
-    // Pasa la resolución seleccionada a la función de recorte
+    // Llamada a getCroppedImg simplificada, sin pasar la resolución.
     const croppedSrc = await getCroppedImg(
       imgRef.current,
-      activeImage.completedCrop,
-      targetResolution
+      activeImage.completedCrop
     );
 
     const updatedImages = localImages.map((img) =>
       img.id === activeImageId ? { ...img, croppedSrc } : img
     );
     setLocalImages(updatedImages);
-    const currentIndex = updatedImages.findIndex(
-      (img) => img.id === activeImageId
-    );
-    const nextImage = updatedImages.find(
-      (img, index) => index > currentIndex && !img.croppedSrc
-    );
+
+    const nextImage = updatedImages.find((img) => !img.croppedSrc);
     setActiveImageId(nextImage ? nextImage.id : null);
-    setTargetResolution(null); // Resetea para la siguiente imagen
   };
 
-  // El resto de los handlers y la lógica permanecen sin cambios
   function onImageLoad(e) {
     if (aspect && activeImage) {
       const { width, height } = e.currentTarget;
@@ -193,14 +151,12 @@ export default function CroppingDialog({
         {activeImage ? (
           <Grid container spacing={2}>
             <Grid item xs={12} md={8}>
-              <Stack spacing={2}>
-                {/* Contenedor de la imagen con tus estilos originales */}
+              <Stack spacing={2} alignItems="center">
                 <Box
                   sx={{
                     width: "400px",
-                    maxWidth: "400px",
+                    maxWidth: "100%",
                     height: "500px",
-                    maxHeight: "500px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -217,44 +173,25 @@ export default function CroppingDialog({
                       src={activeImage.originalSrc}
                       onLoad={onImageLoad}
                       style={{
-                        width: "100%",
                         maxHeight: "500px",
                       }}
                       alt="Para recortar"
                     />
                   </ReactCrop>
                 </Box>
-
-                {/* --- INICIO: SECCIÓN DE RESOLUCIONES AÑADIDA --- */}
-                <Paper variant="outlined" sx={{ p: 2, width: "400px" }}>
-                  <Typography gutterBottom sx={{ fontWeight: 500 }}>
-                    Resolución Final (Opcional)
-                  </Typography>
-                  <ButtonGroup fullWidth size="small">
-                    {RESOLUTIONS.map((res) => (
-                      <Button
-                        key={res}
-                        variant={
-                          targetResolution === res ? "contained" : "outlined"
-                        }
-                        onClick={() => setTargetResolution(res)}
-                      >
-                        {res}px
-                      </Button>
-                    ))}
-                  </ButtonGroup>
-                </Paper>
-                {/* --- FIN: SECCIÓN DE RESOLUCIONES AÑADIDA --- */}
+                {/* --- Interfaz de selección de resolución eliminada --- */}
               </Stack>
             </Grid>
             <Grid item xs={12} md={4}>
-              {/* La cola de recorte permanece exactamente igual */}
               <Paper variant="outlined" sx={{ height: "100%" }}>
                 <Typography sx={{ p: 2, fontWeight: 500 }}>
                   Cola de Recorte
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                <Stack spacing={2} sx={{ px: 2 }}>
+                <Stack
+                  spacing={2}
+                  sx={{ px: 2, overflowY: "auto", maxHeight: 450 }}
+                >
                   {localImages.map((img) => (
                     <Paper
                       key={img.id}
@@ -266,30 +203,66 @@ export default function CroppingDialog({
                         display: "flex",
                         alignItems: "center",
                         cursor: img.croppedSrc ? "default" : "pointer",
-                        outline: `${activeImageId === img.id ? "2px" : "1px"} solid ${activeImageId === img.id ? "#1976d2" : "rgba(0, 0, 0, 0.0)"}`,
+                        outline: `${
+                          activeImageId === img.id ? "2px" : "1px"
+                        } solid ${
+                          activeImageId === img.id
+                            ? "#1976d2"
+                            : "rgba(0, 0, 0, 0.0)"
+                        }`,
                         outlineOffset: "-1px",
                         opacity: img.croppedSrc ? 0.6 : 1,
                       }}
                       variant="outlined"
                     >
-                      <Badge
-                        color="success"
-                        variant="dot"
-                        invisible={!img.croppedSrc}
-                        sx={{ mr: 2 }}
+                      <Box
+                        sx={{
+                          position: "relative",
+                          width: 60,
+                          height: 60,
+                          flexShrink: 0,
+                        }}
                       >
                         <img
                           src={img.originalSrc}
                           alt="thumbnail"
-                          width={60}
-                          height={60}
-                          style={{ objectFit: "cover", borderRadius: "4px" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
                         />
-                      </Badge>
-                      <Typography sx={{ flexGrow: 1, fontSize: ".8rem" }}>
+                        {img.croppedSrc && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: "rgba(255, 255, 255, 0.5)",
+                              borderRadius: "4px",
+                            }}
+                          >
+                            <CheckCircleIcon color="success" fontSize="large" />
+                          </Box>
+                        )}
+                      </Box>
+                      <Typography
+                        noWrap
+                        sx={{
+                          flexGrow: 1,
+                          fontSize: ".8rem",
+                          ml: 2,
+                          alignSelf: "center",
+                        }}
+                      >
                         {img.file.name}
                       </Typography>
-                      {img.croppedSrc && <CheckCircleIcon color="success" />}
                     </Paper>
                   ))}
                 </Stack>
@@ -297,7 +270,6 @@ export default function CroppingDialog({
             </Grid>
           </Grid>
         ) : (
-          // El resto del componente permanece igual
           <Box
             sx={{
               display: "flex",
@@ -319,9 +291,7 @@ export default function CroppingDialog({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>
-          {activeImage ? "Cancelar" : "Finalizar"}
-        </Button>
+        <Button onClick={onClose}>{allCropped ? "Cerrar" : "Cancelar"}</Button>
         {activeImage && (
           <Button
             variant="contained"
@@ -333,7 +303,7 @@ export default function CroppingDialog({
         )}
         {allCropped && (
           <Button variant="contained" color="success" onClick={handleFinish}>
-            Finalizar
+            Finalizar y Guardar
           </Button>
         )}
       </DialogActions>

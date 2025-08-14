@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Box, Paper, Typography, CircularProgress } from "@mui/material";
 
-const CustomNoRowsOverlay = ({ message }) => (
+export const CustomNoRowsOverlay = ({ message }) => (
   <Box
     sx={{
       display: "flex",
