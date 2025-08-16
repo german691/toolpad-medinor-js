@@ -1,28 +1,16 @@
 import { api, handleServiceError } from "../api";
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-/**
- * Convierte una URL de datos (base64) a un objeto File
- */
-const dataURLtoFile = (dataUrl, filename) => {
-  const [header, base64] = dataUrl.split(",");
-  const mime = header.match(/:(.*?);/)[1];
-  const binary = atob(base64);
-  const array = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new File([array], filename, { type: mime });
-};
 /**
  * Obtiene las imágenes existentes de un producto
  */
 export const getProductImages = async (productId) => {
   try {
     const response = await api.get(`/products/${productId}/images`);
-    const images = response.data.images;
-
-    return images.map((img) => ({
+    // Añade la URL base a cada imagen para que se muestre correctamente
+    return response.data.images.map((img) => ({
       ...img,
       url: `${API_BASE_URL}${img.url}`,
     }));
@@ -32,7 +20,8 @@ export const getProductImages = async (productId) => {
 };
 
 /**
- * Sube las imágenes nuevas para un producto
+ * Sube las imágenes nuevas para un producto.
+ * ⭐️ FUNCIÓN ACTUALIZADA ⭐️
  */
 export const uploadImages = async (productId, newImages) => {
   const formData = new FormData();
@@ -40,19 +29,27 @@ export const uploadImages = async (productId, newImages) => {
   const mainImage = newImages.find((img) => img.role === "principal");
   const secondaryImages = newImages.filter((img) => img.role === "secundaria");
 
-  if (mainImage) {
-    const file = dataURLtoFile(mainImage.croppedSrc, mainImage.file.name);
-    formData.append("mainImage", file);
+  // Ya no necesitamos la función dataURLtoFile.
+  // Usamos directamente el blob que viene en el objeto de imagen.
+
+  if (mainImage && mainImage.blob) {
+    // El método append de FormData acepta un Blob directamente.
+    // Formato: formData.append(nombreDelCampo, blob, nombreDelArchivo)
+    formData.append("mainImage", mainImage.blob, mainImage.file.name);
   }
 
   secondaryImages.forEach((img) => {
-    const file = dataURLtoFile(img.croppedSrc, img.file.name);
-    formData.append("secondaryImages", file);
+    if (img.blob) {
+      formData.append("secondaryImages", img.blob, img.file.name);
+    }
   });
 
   try {
     const response = await api.post(`/products/${productId}/upload`, formData, {
       headers: {
+        // El navegador establece el "Content-Type" a "multipart/form-data"
+        // automáticamente cuando usas FormData, por lo que no es estrictamente
+        // necesario ponerlo, pero no está de más ser explícito.
         "Content-Type": "multipart/form-data",
       },
     });
@@ -63,7 +60,7 @@ export const uploadImages = async (productId, newImages) => {
 };
 
 /**
- * Elimina todas las imágenes de un producto
+ * Elimina todas las imágenes de un producto (sin cambios)
  */
 export const clearProductImages = async (productId) => {
   try {
@@ -75,7 +72,7 @@ export const clearProductImages = async (productId) => {
 };
 
 /**
- * Elimina una imagen específica (principal o secundaria) de un producto.
+ * Elimina una imagen específica de un producto (sin cambios)
  */
 export const deleteProductImage = async (productId, imageId) => {
   try {
@@ -87,15 +84,3 @@ export const deleteProductImage = async (productId, imageId) => {
     handleServiceError(error);
   }
 };
-
-// /**
-//  * Elimina la imagen principal de un producto.
-//  */
-// export const deleteMainImage = async (productId) => {
-//   try {
-//     const response = await api.delete(`/products/${productId}/main-image`);
-//     return response.data;
-//   } catch (error) {
-//     handleServiceError(error);
-//   }
-// };

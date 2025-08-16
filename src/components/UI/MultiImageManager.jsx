@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Button,
-  Grid,
   Paper,
   CircularProgress,
   IconButton,
@@ -19,102 +18,66 @@ import {
   HighlightOff,
   Close,
 } from "@mui/icons-material";
-
-import SelectionDialog from "./SelectionDialog";
 import CroppingDialog from "./CroppingDialog";
 
 export default function MultiImageManager({
   selectedProduct,
   existingImages = [],
   newImages = [],
-  onProcessingComplete,
+  onNewImages,
   onUpload,
   onDeleteExisting,
   onDeleteNew,
+  onClearAll,
   isLoading,
   isUploading,
+  alreadyHasPrincipal,
 }) {
   const [localFiles, setLocalFiles] = useState([]);
-  const [selectionModalOpen, setSelectionModalOpen] = useState(false);
   const [croppingModalOpen, setCroppingModalOpen] = useState(false);
   const [fullScreenImage, setFullScreenImage] = useState(null);
 
-  const allImages = useMemo(
-    () => [
-      ...existingImages.map((img) => ({
-        ...img,
-        id: img.id, // Corrección: Usar `img.id` de los datos de la API
-        isNew: false,
-        role: img.isMain ? "principal" : "secundaria",
-      })),
-      ...newImages.map((img) => ({
-        ...img,
-        isNew: true,
-        isMain: img.role === "principal",
-        role: img.role || "secundaria",
-      })),
-    ],
-    [existingImages, newImages]
-  );
+  const allImages = useMemo(() => {
+    const formattedExisting = existingImages.map((img) => ({
+      ...img,
+      id: img._id,
+      src: img.url,
+      isNew: false,
+      role: img.isMain ? "Principal" : "Secundaria",
+    }));
+
+    const formattedNew = newImages.map((img) => ({
+      ...img,
+      src: img.croppedSrc,
+      isNew: true,
+      role: img.role === "principal" ? "Principal" : "Secundaria",
+    }));
+
+    return [...formattedExisting, ...formattedNew];
+  }, [existingImages, newImages]);
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles?.length) {
-      handleResetLocal();
-      const filesToProcess = acceptedFiles.map((file, index) => ({
-        id: Date.now() + index,
+      const filesToProcess = acceptedFiles.map((file) => ({
+        id: `${file.name}-${file.lastModified}-${Math.random()}`,
         file,
         originalSrc: URL.createObjectURL(file),
-        role: null,
-        croppedSrc: null,
       }));
       setLocalFiles(filesToProcess);
-      setSelectionModalOpen(true);
+      setCroppingModalOpen(true);
     }
   }, []);
-
-  const handleSelectionComplete = ({ primaryId, workflowChoice }) => {
-    const imagesWithRoles = localFiles.map((img) => ({
-      ...img,
-      role: img.id === primaryId ? "principal" : "secundaria",
-    }));
-    setLocalFiles(imagesWithRoles);
-    setSelectionModalOpen(false);
-
-    if (workflowChoice === "crop") {
-      setCroppingModalOpen(true);
-    } else if (workflowChoice === "save") {
-      const imagesToSave = imagesWithRoles.map((img) => ({
-        ...img,
-        croppedSrc: img.originalSrc,
-      }));
-
-      console.log("Guardando directamente. Imágenes procesadas:", imagesToSave);
-
-      onProcessingComplete(imagesToSave);
-      handleResetLocal();
-    }
-  };
 
   const handleCroppingComplete = (processedImages) => {
-    onProcessingComplete(processedImages);
-    setCroppingModalOpen(false);
-    handleResetLocal();
+    onNewImages(processedImages);
+    handleCloseCroppingDialog();
   };
 
-  const handleResetLocal = () => {
-    localFiles.forEach((img) => URL.revokeObjectURL(img.originalSrc));
+  const handleCloseCroppingDialog = () => {
+    setCroppingModalOpen(false);
+    localFiles.forEach((f) => URL.revokeObjectURL(f.originalSrc));
     setLocalFiles([]);
-    setSelectionModalOpen(false);
-    setCroppingModalOpen(false);
   };
-
-  const handleClearNewImages = () => {
-    newImages.forEach((img) => onDeleteNew(img.id));
-  };
-
-  const handleImageClick = useCallback((imageSrc) => {
-    setFullScreenImage(imageSrc);
-  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -137,14 +100,23 @@ export default function MultiImageManager({
     cursor: "pointer",
     transition: "all .24s ease-in-out",
     borderRadius: 2,
+    p: 2,
   };
 
   if (!selectedProduct) {
     return (
-      <Paper variant="outlined" sx={{ ...dropzoneStyles }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          ...dropzoneStyles,
+          cursor: "default",
+          borderStyle: "solid",
+          borderColor: "grey.300",
+        }}
+      >
         <Typography variant="h6">Seleccione un Producto</Typography>
         <Typography variant="body2">
-          Elija un producto de la tabla para ver y administrar sus imágenes.
+          Elija un producto de la tabla para administrar sus imágenes.
         </Typography>
       </Paper>
     );
@@ -154,7 +126,12 @@ export default function MultiImageManager({
     return (
       <Paper
         variant="outlined"
-        sx={{ ...dropzoneStyles, cursor: "default", borderStyle: "solid" }}
+        sx={{
+          ...dropzoneStyles,
+          cursor: "default",
+          borderStyle: "solid",
+          borderColor: "grey.300",
+        }}
       >
         <CircularProgress />
         <Typography sx={{ mt: 2 }}>Cargando Imágenes...</Typography>
@@ -173,107 +150,119 @@ export default function MultiImageManager({
         flexDirection: "column",
       }}
     >
-      <Stack direction={"row"} justifyContent={"space-between"}>
-        <Typography sx={{ mb: 2, fontWeight: 500 }}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
+        <Typography
+          sx={{ fontWeight: 500 }}
+          noWrap
+          title={selectedProduct.desc}
+        >
           {selectedProduct.desc}
         </Typography>
-        <Typography sx={{ color: "grey.800" }}>
+        <Typography sx={{ color: "text.secondary", flexShrink: 0, ml: 1 }}>
           Imágenes: {allImages.length}
         </Typography>
       </Stack>
 
-      {allImages.length === 0 ? (
-        <Box {...getRootProps()} sx={dropzoneStyles}>
-          <input {...getInputProps()} />
-          <AddPhotoAlternate sx={{ fontSize: 48, mb: 1 }} />
-          <Typography>Arrastre imágenes o haga clic para agregar</Typography>
-        </Box>
-      ) : (
-        <Box sx={{ flex: 1, overflowY: "auto", pr: 1, mr: -1 }}>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-              gap: 1.5,
-            }}
-          >
-            {allImages.map((img, index) => (
-              <Box
-                key={img.id || index}
-                sx={{ position: "relative", cursor: "pointer" }}
-                onClick={() =>
-                  handleImageClick(img.isNew ? img.croppedSrc : img.url)
-                }
-              >
-                <img
-                  src={img.isNew ? img.croppedSrc : img.url}
-                  alt={img.role || "Imagen de producto"}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    aspectRatio: "1 / 1",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                    outline: "1px solid rgba(0,0,0,0.1)",
-                    outlineOffset: "-1px",
-                  }}
-                />
-                <Typography
-                  sx={{
-                    position: "absolute",
-                    bottom: 4,
-                    left: 6,
-                    bgcolor: `${img.isMain ? "#1976d2" : "rgba(0,0,0,0.6)"}`,
-                    color: "white",
-                    px: 1,
-                    py: "2px",
-                    borderRadius: "4px",
-                    fontSize: "0.7rem",
-                  }}
-                >
-                  {img.isMain ? "Principal" : "Secundaria"}
-                </Typography>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    img.isNew ? onDeleteNew(img.id) : onDeleteExisting(img.id);
-                  }}
-                  sx={{
-                    position: "absolute",
-                    top: 4,
-                    right: 4,
-                    bgcolor: "rgba(255,255,255,0.8)",
-                    "&:hover": { bgcolor: "white" },
-                  }}
-                >
-                  <Delete fontSize="small" color="#000" />
-                </IconButton>
-              </Box>
-            ))}
-
+      <Box
+        sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
+      >
+        {allImages.length === 0 ? (
+          <Box {...getRootProps()} sx={dropzoneStyles}>
+            <input {...getInputProps()} />
+            <AddPhotoAlternate sx={{ fontSize: 48, mb: 1 }} />
+            <Typography>Arrastre imágenes o haga clic para agregar</Typography>
+          </Box>
+        ) : (
+          <Box sx={{ flex: 1, overflowY: "auto", pr: 1, mr: -1 }}>
             <Box
-              {...getRootProps()}
               sx={{
-                ...dropzoneStyles,
-                aspectRatio: "1 / 1",
-                border: "2px dashed",
-                borderColor: "grey.500",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "center",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                gap: 1.5,
               }}
             >
-              <input {...getInputProps()} />
-              <AddPhotoAlternate sx={{ fontSize: 32 }} />
-              <Typography variant="caption">Añadir más</Typography>
+              {allImages.map((img) => (
+                <Box
+                  key={img.id}
+                  sx={{ position: "relative", cursor: "pointer" }}
+                  onClick={() => setFullScreenImage(img.src)}
+                >
+                  <img
+                    src={img.src}
+                    alt={img.role}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      aspectRatio: "1 / 1",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                      outline: "1px solid rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Typography
+                    sx={{
+                      position: "absolute",
+                      bottom: 4,
+                      left: 6,
+                      bgcolor:
+                        img.role === "Principal"
+                          ? "primary.main"
+                          : "rgba(0,0,0,0.6)",
+                      color: "white",
+                      px: 1,
+                      py: "2px",
+                      borderRadius: "4px",
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    {img.role}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      img.isNew
+                        ? onDeleteNew(img.id)
+                        : onDeleteExisting(img.id);
+                    }}
+                    sx={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      bgcolor: "rgba(255,255,255,0.8)",
+                      "&:hover": { bgcolor: "white" },
+                    }}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </Box>
+              ))}
+              <Box
+                {...getRootProps()}
+                sx={{
+                  ...dropzoneStyles,
+                  aspectRatio: "1 / 1",
+                  minHeight: "120px",
+                  border: "2px dashed",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                }}
+              >
+                <input {...getInputProps()} />
+                <AddPhotoAlternate />
+                <Typography variant="caption">Añadir más</Typography>
+              </Box>
             </Box>
           </Box>
-        </Box>
-      )}
+        )}
+      </Box>
 
-      <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
+      <Stack sx={{ mt: 2 }} spacing={1}>
         <Button
           onClick={onUpload}
           fullWidth
@@ -290,52 +279,46 @@ export default function MultiImageManager({
           {isUploading ? "Subiendo..." : `Subir ${newImages.length} Imágenes`}
         </Button>
         <Button
-          onClick={handleClearNewImages}
+          onClick={() => newImages.forEach((img) => onDeleteNew(img.id))}
           fullWidth
           variant="outlined"
-          color="error"
+          color="warning"
           startIcon={<HighlightOff />}
           disabled={newImages.length === 0 || isUploading}
         >
           Limpiar Nuevas
         </Button>
-      </Box>
+        <Button
+          onClick={onClearAll}
+          fullWidth
+          variant="outlined"
+          color="error"
+          startIcon={<Delete />}
+          disabled={allImages.length === 0 || isUploading}
+        >
+          Borrar Todo
+        </Button>
+      </Stack>
 
       <Dialog
         open={!!fullScreenImage}
         onClose={() => setFullScreenImage(null)}
-        PaperProps={{
-          sx: {
-            backgroundColor: "transparent",
-            boxShadow: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            m: 2,
-          },
-        }}
+        maxWidth="xl"
       >
-        <DialogContent
-          sx={{
-            p: 0,
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <DialogContent sx={{ p: 1, position: "relative" }}>
           <img
             src={fullScreenImage}
-            alt="Imagen en pantalla completa"
-            style={{
-              maxWidth: "90vw",
-              maxHeight: "90vh",
-              display: "block",
-              objectFit: "contain",
-            }}
+            alt="Vista completa"
+            style={{ maxWidth: "90vw", maxHeight: "90vh", display: "block" }}
           />
           <IconButton
-            sx={{ position: "absolute", top: 8, right: 8, color: "white" }}
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              color: "white",
+              bgcolor: "rgba(0,0,0,0.5)",
+            }}
             onClick={() => setFullScreenImage(null)}
           >
             <Close />
@@ -343,18 +326,13 @@ export default function MultiImageManager({
         </DialogContent>
       </Dialog>
 
-      <SelectionDialog
-        open={selectionModalOpen}
-        onClose={() => setSelectionModalOpen(false)}
-        images={localFiles}
-        onComplete={handleSelectionComplete}
-      />
       <CroppingDialog
         open={croppingModalOpen}
-        onClose={() => setCroppingModalOpen(false)}
+        onClose={handleCloseCroppingDialog}
         images={localFiles}
         onComplete={handleCroppingComplete}
-        aspect={1 / 1}
+        aspect={1}
+        principalExists={alreadyHasPrincipal}
       />
     </Paper>
   );

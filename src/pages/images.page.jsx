@@ -6,7 +6,13 @@ import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
 import {
   Box,
+  Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Paper,
   Stack,
@@ -17,6 +23,7 @@ import { Refresh } from "@mui/icons-material";
 import MultiImageManager from "../components/UI/MultiImageManager";
 import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
 import {
+  clearProductImages,
   deleteProductImage,
   getProductImages,
   uploadImages,
@@ -45,52 +52,49 @@ export function ImagesPage() {
     refresh,
   } = useCRUD();
 
-  const handleRefresh = useCallback(() => {
-    setSearch("");
-    refresh();
-  }, [setSearch, refresh]);
-
-  const [labs, setLabs] = useState([]);
-  const [categories, setCategories] = useState([]);
-
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    const fetchLabs = async () => {
-      try {
-        const response = await getLabs();
-        const formattedLabs = response.data.items.map((labObj) => ({
-          value: labObj.lab,
-          label: labObj.lab,
-          key: labObj.lab,
-        }));
-        setLabs(formattedLabs);
-      } catch (error) {
-        console.error("Error al cargar los laboratorios:", error);
-      }
-    };
-    fetchLabs();
-  }, []);
+  const hasPrincipalImage = useMemo(() => {
+    const existingHasMain = existingImages.some((img) => img.isMain);
+    const newHasMain = newImages.some((img) => img.role === "principal");
+    return existingHasMain || newHasMain;
+  }, [existingImages, newImages]);
+
+  const [notification, setNotification] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchAuxData = async () => {
       try {
-        const response = await getCategories();
-        const formattedCats = response.data.items.map((catObj) => ({
-          value: catObj.category,
-          label: catObj.category,
-          key: catObj.category,
-        }));
-        setCategories(formattedCats);
+        const labsRes = await getLabs();
+        setLabs(
+          labsRes.data.items.map((l) => ({ value: l.lab, label: l.lab }))
+        );
+        const catsRes = await getCategories();
+        setCategories(
+          catsRes.data.items.map((c) => ({
+            value: c.category,
+            label: c.category,
+          }))
+        );
       } catch (error) {
-        console.error("Error al cargar las categorías:", error);
+        console.error("Error al cargar datos auxiliares:", error);
       }
     };
-    fetchCategories();
+    fetchAuxData();
   }, []);
 
   useEffect(() => {
@@ -109,6 +113,11 @@ export function ImagesPage() {
       } catch (error) {
         console.error(error.message || "Error al cargar imágenes");
         setExistingImages([]);
+        setNotification({
+          open: true,
+          title: "Error",
+          message: "No se pudieron cargar las imágenes del producto.",
+        });
       } finally {
         setImagesLoading(false);
       }
@@ -125,8 +134,7 @@ export function ImagesPage() {
     }
   };
 
-  const handleProcessingComplete = (processedImages) => {
-    console.log("Recibiendo imágenes procesadas:", processedImages);
+  const handleNewImages = (processedImages) => {
     setNewImages((prev) => [...prev, ...processedImages]);
   };
 
@@ -136,59 +144,95 @@ export function ImagesPage() {
     try {
       await uploadImages(selectedProduct._id, newImages);
       setNewImages([]);
-
       const updatedImages = await getProductImages(selectedProduct._id);
       setExistingImages(updatedImages);
-
-      alert("¡Imágenes subidas con éxito!");
+      setNotification({
+        open: true,
+        title: "Éxito",
+        message: "¡Imágenes subidas correctamente!",
+      });
     } catch (error) {
       console.error(error);
-      alert(error.message || "Hubo un error al subir las imágenes.");
+      setNotification({
+        open: true,
+        title: "Error de Subida",
+        message: error.message || "Hubo un problema al subir las imágenes.",
+      });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDeleteExisting = async (imageId) => {
+  const handleDeleteExisting = (imageId) => {
     if (!selectedProduct) return;
-    try {
-      console.log("Intentando eliminar imagen con ID:", imageId); // Añadido para depuración
-      await deleteProductImage(selectedProduct._id, imageId);
-      // Filtra el estado basándose en la propiedad `_id` original
-      // Esto es más seguro si tu backend sigue usando `_id`
-      setExistingImages((prev) => prev.filter((img) => img._id !== imageId));
-    } catch (err) {
-      console.error("Error al borrar la imagen", err);
-      alert("Error al borrar la imagen.");
-    }
+
+    const imageToDelete = existingImages.find((img) => img._id === imageId);
+
+    setConfirmDialog({
+      open: true,
+      title: "Confirmar Eliminación",
+      message: `¿Está seguro de que desea eliminar esta imagen ${imageToDelete?.isMain ? "PRINCIPAL" : ""}?`,
+      onConfirm: async () => {
+        handleCloseConfirm();
+        try {
+          await deleteProductImage(selectedProduct._id, imageId);
+          const updatedImages = await getProductImages(selectedProduct._id);
+          setExistingImages(updatedImages);
+        } catch (err) {
+          console.error("Error al borrar la imagen", err);
+          setNotification({
+            open: true,
+            title: "Error",
+            message: "No se pudo borrar la imagen.",
+          });
+        }
+      },
+    });
   };
 
   const handleDeleteNew = (imageId) => {
     setNewImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
+  const handleClearAllImages = () => {
+    if (!selectedProduct) return;
+    setConfirmDialog({
+      open: true,
+      title: "¡Atención!",
+      message: `¿Desea eliminar TODAS las imágenes de ${selectedProduct.desc}? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        handleCloseConfirm();
+        try {
+          await clearProductImages(selectedProduct._id);
+          setExistingImages([]);
+          setNotification({
+            open: true,
+            title: "Éxito",
+            message: "Todas las imágenes fueron eliminadas.",
+          });
+        } catch (err) {
+          console.error("Error al borrar todas las imágenes", err);
+          setNotification({
+            open: true,
+            title: "Error",
+            message: "No se pudieron eliminar las imágenes.",
+          });
+        }
+      },
+    });
+  };
+
+  const handleCloseNotification = () =>
+    setNotification({ ...notification, open: false });
+  const handleCloseConfirm = () =>
+    setConfirmDialog({ ...confirmDialog, open: false });
+
   const productColumns = useMemo(
     () => [
       { field: "code", headerName: "Código", width: 120 },
       { field: "desc", headerName: "Descripción", flex: 1, minWidth: 225 },
-      {
-        field: "lab",
-        headerName: "Laboratorio",
-        minWidth: 100,
-        renderCell: (params) => {
-          const lab = labs.find((l) => l.value === params.value);
-          return lab ? lab.label : params.value;
-        },
-      },
-      {
-        field: "category",
-        headerName: "Categoría",
-        minWidth: 135,
-        renderCell: (params) => {
-          const category = categories.find((c) => c.value === params.value);
-          return category ? category.label : params.value;
-        },
-      },
+      { field: "lab", headerName: "Laboratorio", minWidth: 100 },
+      { field: "category", headerName: "Categoría", minWidth: 135 },
       {
         field: "image",
         headerName: "Imágenes",
@@ -197,11 +241,9 @@ export function ImagesPage() {
         align: "center",
       },
     ],
-    [labs, categories]
+    []
   );
-  const noRowsMessage = error
-    ? `Error: ${error.message}`
-    : "No se encontraron resultados.";
+
   const handleSortModelChange = (model) =>
     setSort(
       model.length > 0 ? { key: model[0].field, direction: model[0].sort } : {}
@@ -220,6 +262,10 @@ export function ImagesPage() {
     page: (pagination?.page || 1) - 1,
     pageSize: pagination?.limit || 25,
   };
+  const handleRefresh = useCallback(() => {
+    setSearch("");
+    refresh();
+  }, [setSearch, refresh]);
 
   function ToolBox() {
     return (
@@ -257,7 +303,6 @@ export function ImagesPage() {
             columns={productColumns}
             getRowId={(row) => row._id}
             loading={loading}
-            pagination
             paginationMode="server"
             rowCount={pagination?.total || 0}
             paginationModel={paginationModel}
@@ -266,38 +311,83 @@ export function ImagesPage() {
             sortingMode="server"
             sortModel={sortModel}
             onSortModelChange={handleSortModelChange}
-            rowHeight={40}
             onRowClick={handleRowClick}
+            selectionModel={selectedProduct ? selectedProduct._id : undefined}
             sx={{
               border: 0,
               "& .MuiDataGrid-row--selected": {
                 bgcolor: "action.selected",
                 "&:hover": { bgcolor: "action.hover" },
               },
+              "& .MuiDataGrid-cell:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-cell:focus-within": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-columnHeader:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-columnHeader:focus-within": {
+                outline: "none",
+              },
             }}
-            selectionModel={selectedProduct ? selectedProduct._id : undefined}
             components={{
               NoRowsOverlay: () => (
-                <CustomNoRowsOverlay message={noRowsMessage} />
+                <CustomNoRowsOverlay
+                  message={
+                    error
+                      ? `Error: ${error.message}`
+                      : "No se encontraron resultados."
+                  }
+                />
               ),
               LoadingOverlay: CircularProgress,
             }}
           />
         </Paper>
-        <Box sx={{ width: "35%", minWidth: "300px" }}>
+
+        <Box sx={{ width: "35%", minWidth: "350px", maxWidth: "500px" }}>
           <MultiImageManager
             selectedProduct={selectedProduct}
             existingImages={existingImages}
             newImages={newImages}
-            onProcessingComplete={handleProcessingComplete}
+            onNewImages={handleNewImages}
             onUpload={handleUpload}
             onDeleteExisting={handleDeleteExisting}
             onDeleteNew={handleDeleteNew}
+            onClearAll={handleClearAllImages}
             isLoading={imagesLoading}
             isUploading={uploading}
+            alreadyHasPrincipal={hasPrincipalImage}
           />
         </Box>
       </Stack>
+
+      <Dialog open={notification.open} onClose={handleCloseNotification}>
+        <DialogTitle>{notification.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{notification.message}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNotification} autoFocus>
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmDialog.open} onClose={handleCloseConfirm}>
+        <DialogTitle>{confirmDialog.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{confirmDialog.message}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirm}>Cancelar</Button>
+          <Button onClick={confirmDialog.onConfirm} color="error" autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageContainer>
   );
 }
