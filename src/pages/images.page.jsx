@@ -28,7 +28,6 @@ import {
   getProductImages,
   uploadImages,
 } from "../services/imageService";
-import getLabs from "../services/labService";
 import UploadByCodeDialog from "../components/Dialog/UploadByCodeDialog";
 
 export default function ProductsImageWrapper() {
@@ -50,7 +49,6 @@ export function ImagesPage() {
     setLimit,
     setSort,
     setSearch,
-    refresh,
   } = useCRUD();
 
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -246,8 +244,7 @@ export function ImagesPage() {
   };
   const handleRefresh = useCallback(() => {
     setSearch("");
-    refresh();
-  }, [setSearch, refresh]);
+  }, [setSearch]);
 
   function ToolBox() {
     return (
@@ -379,7 +376,7 @@ export function ImagesPage() {
       <UploadByCodeDialog
         open={isUploadByCodeDialogOpen}
         onClose={() => setIsUploadByCodeDialogOpen(false)}
-        onUploadComplete={refresh}
+        onUploadComplete={() => setSearch("")}
       />
     </PageContainer>
   );

@@ -47,7 +47,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
       const response = await getLabs();
       setLabs(response.data.items || []);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setLabs([]);
     }
   };
@@ -57,7 +57,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
       const response = await getCategories();
       setCategories(response.data.items || []);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setCategories([]);
     }
   };
@@ -94,7 +94,6 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
         public_price: parseFloat(formData.public_price) || 0,
         price: parseFloat(formData.price) || 0,
       };
-      console.log(dataToSave);
       await onSave(dataToSave);
       handleClose();
     } catch (err) {

@@ -38,8 +38,6 @@ export const getProducts = async ({
       search,
     });
 
-    console.log(response);
-
     return response.data;
   } catch (error) {
     handleServiceError(error);
@@ -75,7 +73,6 @@ export const updateProductById = async (id, productData) => {
 
 export const bulkUpdateProducts = async (productData) => {
   try {
-    console.log("datos que llegan al servicio de productos", productData);
     const response = await api.put("/products/update", productData);
     return response;
   } catch (error) {

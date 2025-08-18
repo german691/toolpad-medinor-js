@@ -48,7 +48,6 @@ export function ProductsPage() {
           key: catObj.category,
         }));
 
-        console.log("formatted", formattedCats);
         setCategories(formattedCats);
       } catch (error) {
         console.error("Error al cargar las categorías:", error);
@@ -160,7 +159,6 @@ export function ProductsPage() {
 
   const handleSaveProduct = async (productData) => {
     let response = null;
-    console.log("lo que llega a la pag", productData);
     try {
       response = await createNewProduct(productData);
       setStatusMessage({
@@ -168,8 +166,6 @@ export function ProductsPage() {
       });
       fetchItems();
     } catch (error) {
-      console.log(response);
-
       setStatusMessage({
         title: "Ha ocurrido un problema: ",
         message: error.message,
@@ -195,7 +191,6 @@ export function ProductsPage() {
           severity: "warning",
         });
       } else {
-        console.log(response.data.updatedCount, response);
         response.data.updatedCount === 1
           ? setStatusMessage({
               title: "Producto actualizado con éxito",

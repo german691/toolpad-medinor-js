@@ -64,10 +64,6 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
 
   const handleSaveWrapper = useCallback(async () => {
     if (onUpdate) {
-      console.log(
-        "datos impresos desde wrapper: ",
-        Object.values(modifiedRows)
-      );
       onUpdate(Object.values(modifiedRows));
       setHasChanges(false);
       setModifiedRows({});

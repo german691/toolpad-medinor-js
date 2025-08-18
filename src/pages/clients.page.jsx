@@ -67,8 +67,6 @@ export function ClientsPage() {
       });
       fetchItems();
     } catch (error) {
-      console.log(response);
-
       setStatusMessage({
         title: "Ha ocurrido un problema: ",
         message: error.message,
@@ -94,7 +92,6 @@ export function ClientsPage() {
           severity: "warning",
         });
       } else {
-        console.log(response.data.updatedCount, response);
         response.data.updatedCount == 1
           ? setStatusMessage({
               title: "Cliente actualizado con éxito",

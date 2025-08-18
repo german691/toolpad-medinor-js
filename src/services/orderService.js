@@ -17,3 +17,21 @@ export const getOrders = async (params = {}) => {
     handleServiceError(error);
   }
 };
+
+export const getOrderById = async (orderId) => {
+  try {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const closeOrder = async (orderId) => {
+  try {
+    const response = await api.post("/orders/close", { orderId });
+    return response.data;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};

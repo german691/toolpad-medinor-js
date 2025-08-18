@@ -103,7 +103,6 @@ export default function LabsPage() {
   const handleClose = () => setOpen(false);
 
   const handleConfirm = () => {
-    console.log("Eliminar:", selectedLabs);
     setSelectedLabs([]);
     setOpen(false);
   };

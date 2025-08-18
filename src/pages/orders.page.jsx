@@ -1,5 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
-
+import React, { useMemo, useCallback } from "react";
 import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -15,7 +14,7 @@ import Searchbox from "../components/UI/Searchbox";
 import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
 import { getOrders } from "../services/orderService";
 import { CRUDProvider, useCRUD } from "../hooks/context/useCRUD";
-import OrderDetailDialog from "../components/Dialog/OrderDetailsDialog";
+import { useNavigate } from "react-router-dom";
 
 export default function OrdersPageWrapper() {
   return (
@@ -36,25 +35,17 @@ export function OrdersPage() {
     setLimit,
     setSort,
     setSearch,
-    refresh,
   } = useCRUD();
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
-
-  console.log("ESTOS SON LOS DATOS REALES QUE LLEGAN A LA TABLA:", orders);
+  const navigate = useNavigate();
 
   const handleRowClick = (params) => {
-    setSelectedOrder(params.row);
-  };
-
-  const handleCloseDialog = () => {
-    setSelectedOrder(null);
+    navigate(`/orders/manage/${params.row._id}`);
   };
 
   const handleRefresh = useCallback(() => {
     setSearch("");
-    refresh();
-  }, [setSearch, refresh]);
+  }, [setSearch]);
 
   const columns = useMemo(
     () => [
@@ -164,7 +155,6 @@ export function OrdersPage() {
           </IconButton>
         </Tooltip>
       </Stack>
-
       <Paper
         sx={{
           height: "75vh",
@@ -188,19 +178,10 @@ export function OrdersPage() {
           sortModel={sortModel}
           onSortModelChange={handleSortModelChange}
           onRowClick={handleRowClick}
-          components={{
-            NoRowsOverlay: () => (
-              <CustomNoRowsOverlay
-                message={
-                  error
-                    ? `Error: ${error.message}`
-                    : "No se encontraron pedidos."
-                }
-              />
-            ),
-            LoadingOverlay: CircularProgress,
-          }}
           sx={{
+            "& .MuiDataGrid-row:hover": {
+              cursor: "pointer",
+            },
             border: 0,
             "& .MuiDataGrid-row--selected": {
               bgcolor: "action.selected",
@@ -219,16 +200,20 @@ export function OrdersPage() {
               outline: "none",
             },
           }}
+          components={{
+            NoRowsOverlay: () => (
+              <CustomNoRowsOverlay
+                message={
+                  error
+                    ? `Error: ${error.message}`
+                    : "No se encontraron pedidos."
+                }
+              />
+            ),
+            LoadingOverlay: CircularProgress,
+          }}
         />
       </Paper>
-
-      {selectedOrder && (
-        <OrderDetailDialog
-          order={selectedOrder}
-          open={Boolean(selectedOrder)}
-          onClose={handleCloseDialog}
-        />
-      )}
     </PageContainer>
   );
 }

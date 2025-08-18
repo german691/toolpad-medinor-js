@@ -16,6 +16,7 @@ import {
   ListItem,
   ListItemText,
   Collapse,
+  Stack,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -23,7 +24,6 @@ import {
   Cancel,
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
-import path from "path-browserify";
 import { uploadImagesByCode } from "../../services/imageService";
 
 function ImageViewer({ open, imageUrl, onClose }) {
@@ -53,7 +53,7 @@ export default function UploadByCodeDialog({
     const processedFiles = acceptedFiles.map((file) =>
       Object.assign(file, {
         preview: URL.createObjectURL(file),
-        code: path.parse(file.name).name,
+        code: file.name.replace(/\.[^/.]+$/, ""),
       })
     );
     setFiles(processedFiles);
@@ -111,30 +111,32 @@ export default function UploadByCodeDialog({
         <DialogContent dividers>
           {!uploadResult && (
             <Box>
-              <Box
-                {...getRootProps()}
-                sx={{
-                  border: "2px dashed grey",
-                  borderRadius: 2,
-                  p: 4,
-                  textAlign: "center",
-                  cursor: "pointer",
-                  bgcolor: isDragActive ? "action.hover" : "transparent",
-                  mb: 2,
-                }}
-              >
-                <input {...getInputProps()} />
-                <CloudUpload sx={{ fontSize: 48, color: "text.secondary" }} />
-                <Typography>
-                  {isDragActive
-                    ? "Suelta las imágenes aquí..."
-                    : "Arrastra y suelta las imágenes aquí, o haz clic para seleccionarlas"}
-                </Typography>
-                <Typography variant="caption">
-                  El nombre de cada archivo debe ser el código del producto (ej:
-                  "COD123.jpg")
-                </Typography>
-              </Box>
+              {files.length < 1 && (
+                <Box
+                  {...getRootProps()}
+                  sx={{
+                    border: "2px dashed grey",
+                    borderRadius: 2,
+                    p: 4,
+                    textAlign: "center",
+                    cursor: "pointer",
+                    bgcolor: isDragActive ? "action.hover" : "transparent",
+                    mb: files.length > 0 ? 2 : 0,
+                  }}
+                >
+                  <input {...getInputProps()} />
+                  <CloudUpload sx={{ fontSize: 48, color: "text.secondary" }} />
+                  <Typography>
+                    {isDragActive
+                      ? "Suelta las imágenes aquí..."
+                      : "Arrastra y suelta las imágenes aquí, o haz clic para seleccionarlas"}
+                  </Typography>
+                  <Typography variant="caption">
+                    El nombre de cada archivo debe ser el código del producto
+                    (ej: "COD123.jpg")
+                  </Typography>
+                </Box>
+              )}
 
               {files.length > 0 && (
                 <Paper
@@ -142,8 +144,8 @@ export default function UploadByCodeDialog({
                   sx={{ p: 1, maxHeight: "40vh", overflowY: "auto" }}
                 >
                   <Grid container spacing={2}>
-                    {files.map((file) => (
-                      <Grid item xs={4} sm={3} md={2} key={file.path}>
+                    {files.map((file, index) => (
+                      <Grid item xs={4} sm={3} md={2} key={file.name + index}>
                         <Box sx={{ textAlign: "center" }}>
                           <img
                             src={file.preview}
