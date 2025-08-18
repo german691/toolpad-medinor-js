@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import Searchbox from "../components/UI/Searchbox";
-import { Refresh } from "@mui/icons-material";
+import { AddPhotoAlternate, Refresh } from "@mui/icons-material";
 import MultiImageManager from "../components/UI/MultiImageManager";
 import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
 import {
@@ -29,6 +29,7 @@ import {
   uploadImages,
 } from "../services/imageService";
 import getLabs from "../services/labService";
+import UploadByCodeDialog from "../components/Dialog/UploadByCodeDialog";
 
 export default function ProductsImageWrapper() {
   return (
@@ -57,6 +58,8 @@ export function ImagesPage() {
   const [newImages, setNewImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isUploadByCodeDialogOpen, setIsUploadByCodeDialogOpen] =
+    useState(false);
 
   const hasPrincipalImage = useMemo(() => {
     const existingHasMain = existingImages.some((img) => img.isMain);
@@ -75,27 +78,6 @@ export function ImagesPage() {
     message: "",
     onConfirm: () => {},
   });
-
-  useEffect(() => {
-    const fetchAuxData = async () => {
-      try {
-        const labsRes = await getLabs();
-        setLabs(
-          labsRes.data.items.map((l) => ({ value: l.lab, label: l.lab }))
-        );
-        const catsRes = await getCategories();
-        setCategories(
-          catsRes.data.items.map((c) => ({
-            value: c.category,
-            label: c.category,
-          }))
-        );
-      } catch (error) {
-        console.error("Error al cargar datos auxiliares:", error);
-      }
-    };
-    fetchAuxData();
-  }, []);
 
   useEffect(() => {
     if (!selectedProduct) {
@@ -276,6 +258,11 @@ export function ImagesPage() {
             <Refresh />
           </IconButton>
         </Tooltip>
+        <Tooltip title="Añadir imágenes por código de productop" arrow>
+          <IconButton onClick={() => setIsUploadByCodeDialogOpen(true)}>
+            <AddPhotoAlternate />
+          </IconButton>
+        </Tooltip>
       </Stack>
     );
   }
@@ -313,6 +300,18 @@ export function ImagesPage() {
             onSortModelChange={handleSortModelChange}
             onRowClick={handleRowClick}
             selectionModel={selectedProduct ? selectedProduct._id : undefined}
+            components={{
+              NoRowsOverlay: () => (
+                <CustomNoRowsOverlay
+                  message={
+                    error
+                      ? `Error: ${error.message}`
+                      : "No se encontraron resultados."
+                  }
+                />
+              ),
+              LoadingOverlay: CircularProgress,
+            }}
             sx={{
               border: 0,
               "& .MuiDataGrid-row--selected": {
@@ -331,18 +330,6 @@ export function ImagesPage() {
               "& .MuiDataGrid-columnHeader:focus-within": {
                 outline: "none",
               },
-            }}
-            components={{
-              NoRowsOverlay: () => (
-                <CustomNoRowsOverlay
-                  message={
-                    error
-                      ? `Error: ${error.message}`
-                      : "No se encontraron resultados."
-                  }
-                />
-              ),
-              LoadingOverlay: CircularProgress,
             }}
           />
         </Paper>
@@ -388,6 +375,12 @@ export function ImagesPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <UploadByCodeDialog
+        open={isUploadByCodeDialogOpen}
+        onClose={() => setIsUploadByCodeDialogOpen(false)}
+        onUploadComplete={refresh}
+      />
     </PageContainer>
   );
 }

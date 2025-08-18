@@ -109,9 +109,6 @@ export default function MultiImageManager({
         variant="outlined"
         sx={{
           ...dropzoneStyles,
-          cursor: "default",
-          borderStyle: "solid",
-          borderColor: "grey.300",
         }}
       >
         <Typography variant="h6">Seleccione un Producto</Typography>

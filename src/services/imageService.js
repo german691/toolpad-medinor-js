@@ -9,7 +9,6 @@ const API_BASE_URL =
 export const getProductImages = async (productId) => {
   try {
     const response = await api.get(`/products/${productId}/images`);
-    // Añade la URL base a cada imagen para que se muestre correctamente
     return response.data.images.map((img) => ({
       ...img,
       url: `${API_BASE_URL}${img.url}`,
@@ -21,7 +20,6 @@ export const getProductImages = async (productId) => {
 
 /**
  * Sube las imágenes nuevas para un producto.
- * ⭐️ FUNCIÓN ACTUALIZADA ⭐️
  */
 export const uploadImages = async (productId, newImages) => {
   const formData = new FormData();
@@ -29,12 +27,7 @@ export const uploadImages = async (productId, newImages) => {
   const mainImage = newImages.find((img) => img.role === "principal");
   const secondaryImages = newImages.filter((img) => img.role === "secundaria");
 
-  // Ya no necesitamos la función dataURLtoFile.
-  // Usamos directamente el blob que viene en el objeto de imagen.
-
   if (mainImage && mainImage.blob) {
-    // El método append de FormData acepta un Blob directamente.
-    // Formato: formData.append(nombreDelCampo, blob, nombreDelArchivo)
     formData.append("mainImage", mainImage.blob, mainImage.file.name);
   }
 
@@ -47,9 +40,6 @@ export const uploadImages = async (productId, newImages) => {
   try {
     const response = await api.post(`/products/${productId}/upload`, formData, {
       headers: {
-        // El navegador establece el "Content-Type" a "multipart/form-data"
-        // automáticamente cuando usas FormData, por lo que no es estrictamente
-        // necesario ponerlo, pero no está de más ser explícito.
         "Content-Type": "multipart/form-data",
       },
     });
@@ -79,6 +69,28 @@ export const deleteProductImage = async (productId, imageId) => {
     const response = await api.delete(
       `/products/${productId}/images/${imageId}`
     );
+    return response.data;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+/**
+ * Sube imágenes en lote, asociándolas por el nombre del archivo (código de producto).
+ */
+export const uploadImagesByCode = async (files) => {
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    formData.append("product_images", file);
+  });
+
+  try {
+    const response = await api.post("/products/upload-by-code", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   } catch (error) {
     handleServiceError(error);

@@ -63,8 +63,8 @@ const NAVIGATION: Navigation = [
       {
         segment: "images",
         title: "Imágenes",
-        icon: <Image />
-      }
+        icon: <Image />,
+      },
     ],
   },
   {
@@ -77,20 +77,15 @@ const NAVIGATION: Navigation = [
     icon: <ShoppingCart />,
     children: [
       {
-        segment: "create",
-        title: "Agregar pedido",
-        icon: <Sell />,
-      },
-      {
         segment: "manage",
         title: "Lista de Pedidos",
-        icon: <ShoppingBasket />,
+        icon: <Sell />,
       },
-      {
-        segment: "history",
-        title: "Historial",
-        icon: <History />,
-      },
+      // {
+      //   segment: "history",
+      //   title: "Historial",
+      //   icon: <History />,
+      // },
     ],
   },
 ];
