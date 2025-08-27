@@ -52,7 +52,8 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
   const handleDataGridCancelChanges = useCallback(() => {
     setHasChanges(false);
     setModifiedRows({});
-  }, []);
+    fetchItems();
+  }, [fetchItems]);
 
   const handleDataGridEditChange = useCallback((newRow, oldRow) => {
     const hasRowChanged = JSON.stringify(newRow) !== JSON.stringify(oldRow);
