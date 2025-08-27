@@ -27,8 +27,6 @@ import { PageContainer } from "@toolpad/core";
 import { useParams, useNavigate } from "react-router-dom";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useSelector } from "react-redux";
-import { selectCurrentUserRole } from "../features/authSlice";
 import { getProductImages } from "../services/imageService";
 import { closeOrder, getOrderById } from "../services/orderService";
 
@@ -85,6 +83,7 @@ const OrderItemRow = ({ item, onImageClick }) => {
       hover
       sx={{
         cursor: item.product?._id ? "pointer" : "default",
+        height: "40px",
       }}
     >
       <TableCell component="th" scope="row">
@@ -96,7 +95,7 @@ const OrderItemRow = ({ item, onImageClick }) => {
       <TableCell align="right">{item.quantity || "N/A"}</TableCell>
       <TableCell align="right">{formatCurrency(item.price)}</TableCell>
       <TableCell align="right">
-        {item.discountAmount > 0 ? `${item.discountAmount}%` : "0%"}
+        {item.discountAmount > 0 ? `${item.discountAmount.toFixed(2)}%` : "0%"}
       </TableCell>
       <TableCell align="right">
         {formatCurrency(itemTotalWithDiscount)}
@@ -305,8 +304,8 @@ export default function OrderDetailsPage() {
       </Box>
 
       <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <TableContainer>
-          <Table aria-label="Order details table">
+        <TableContainer sx={{ maxHeight: "64vh" }}>
+          <Table aria-label="Order details table" stickyHeader size="small">
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: "semibold" }}>Código</TableCell>
