@@ -8,7 +8,7 @@ import {
   Stack,
   Tooltip,
 } from "@mui/material";
-import { PageContainer, PageHeader } from "@toolpad/core/PageContainer";
+import { PageContainer } from "@toolpad/core/PageContainer";
 import { useCRUD } from "../../hooks/context/useCRUD";
 import {
   Add,
@@ -52,7 +52,8 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
   const handleDataGridCancelChanges = useCallback(() => {
     setHasChanges(false);
     setModifiedRows({});
-  }, []);
+    fetchItems();
+  }, [fetchItems]);
 
   const handleDataGridEditChange = useCallback((newRow, oldRow) => {
     const hasRowChanged = JSON.stringify(newRow) !== JSON.stringify(oldRow);
@@ -88,6 +89,11 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
     },
     [setFilters]
   );
+
+  const mergedData = useMemo(() => {
+    if (!items) return [];
+    return items.map((row) => modifiedRows[row._id] || row);
+  }, [items, modifiedRows]);
 
   const ToolbarButtons = () => (
     <Box
@@ -158,7 +164,7 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
       <Box sx={containerSx}>
         <ToolbarButtons />
         <GenericDataGrid
-          data={items}
+          data={mergedData}
           columns={columns}
           loading={loading}
           error={error}
