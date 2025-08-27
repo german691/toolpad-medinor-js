@@ -34,7 +34,10 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
     setSort,
     clearError,
     setSearch,
+    setFilters,
   } = useCRUD();
+
+  const [filterModel, setFilterModel] = useState({ items: [] });
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const handleToggleFullScreen = () => setIsFullScreen((prev) => !prev);
@@ -69,6 +72,22 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
       setModifiedRows({});
     }
   }, [onUpdate, modifiedRows]);
+
+  const handleFilterModelChange = useCallback(
+    (newModel) => {
+      setFilterModel(newModel);
+
+      const newFilters = newModel.items.reduce((acc, item) => {
+        if (item.value) {
+          acc[item.field] = item.value;
+        }
+        return acc;
+      }, {});
+
+      setFilters(newFilters);
+    },
+    [setFilters]
+  );
 
   const ToolbarButtons = () => (
     <Box
@@ -151,6 +170,8 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
           isFullScreen={isFullScreen}
           onEditChange={handleDataGridEditChange}
           fetchItems={fetchItems}
+          filterModel={filterModel}
+          onFilterModelChange={handleFilterModelChange}
         />
         <Snackbar open={error} autoHideDuration={6000} onClose={clearError}>
           <Alert severity="error" onClose={clearError} sx={{ width: "100%" }}>

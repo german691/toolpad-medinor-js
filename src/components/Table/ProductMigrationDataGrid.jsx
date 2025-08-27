@@ -161,6 +161,10 @@ export default function ProductMigrationDataGrid() {
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
                   }}
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
               <Divider sx={{ my: 2 }} />
@@ -221,9 +225,11 @@ export default function ProductMigrationDataGrid() {
                 pagination: { paginationModel: { pageSize: 25 } },
               }}
               localeText={{
+                ...esES.components.MuiDataGrid.defaultProps.localeText,
                 noRowsLabel:
                   "No se hallaron nuevos productos en la nómina procesada. Si cree que esto es un error, por favor, verifique la última fecha de subida de los registros con la fecha de creación de la nómina.",
               }}
+              disableColumnFilter={true}
             />
           </Box>
           <Divider sx={{ my: 2 }} />
@@ -296,6 +302,10 @@ export default function ProductMigrationDataGrid() {
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
                   }}
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
             </DialogContent>
@@ -337,6 +347,10 @@ export default function ProductMigrationDataGrid() {
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
                   }}
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
             </DialogContent>

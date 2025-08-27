@@ -29,6 +29,7 @@ import {
   uploadImages,
 } from "../services/imageService";
 import UploadByCodeDialog from "../components/Dialog/UploadByCodeDialog";
+import { esES } from "@mui/x-data-grid/locales";
 
 export default function ProductsImageWrapper() {
   return (
@@ -49,9 +50,12 @@ export function ImagesPage() {
     setLimit,
     setSort,
     setSearch,
+    setFilters,
   } = useCRUD();
 
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [filterModel, setFilterModel] = useState({ items: [] });
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
@@ -105,6 +109,23 @@ export function ImagesPage() {
 
     fetchImages();
   }, [selectedProduct]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        const formattedCats = response.data.items.map((catObj) => ({
+          value: catObj.category,
+          label: catObj.category,
+        }));
+
+        setCategories(formattedCats);
+      } catch (error) {
+        console.error("Error al cargar las categorías:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleRowClick = (params) => {
     if (selectedProduct?._id === params.row._id) {
@@ -209,16 +230,40 @@ export function ImagesPage() {
 
   const productColumns = useMemo(
     () => [
-      { field: "code", headerName: "Código", width: 120 },
-      { field: "desc", headerName: "Descripción", flex: 1, minWidth: 225 },
-      { field: "lab", headerName: "Laboratorio", minWidth: 100 },
-      { field: "category", headerName: "Categoría", minWidth: 135 },
+      {
+        field: "code",
+        headerName: "Código",
+        width: 120,
+        filterable: false,
+      },
+      {
+        field: "desc",
+        headerName: "Descripción",
+        flex: 1,
+        minWidth: 225,
+        filterable: false,
+      },
+      {
+        field: "lab",
+        headerName: "Laboratorio",
+        minWidth: 100,
+        filterable: false,
+      },
+      {
+        field: "category",
+        headerName: "Categoría",
+        minWidth: 135,
+        type: "singleSelect",
+        filterable: true,
+        valueOptions: categories,
+      },
       {
         field: "image",
         headerName: "Imágenes",
         type: "boolean",
         minWidth: 80,
         align: "center",
+        filterable: false,
       },
     ],
     []
@@ -232,19 +277,38 @@ export function ImagesPage() {
     () => (sort?.key ? [{ field: sort.key, sort: sort.direction }] : []),
     [sort]
   );
+
   const handlePaginationModelChange = (newModel) => {
     if (newModel.pageSize !== (pagination?.limit || 25))
       setLimit(newModel.pageSize);
     if (newModel.page !== (pagination?.page - 1 || 0))
       setPage(newModel.page + 1);
   };
+
   const paginationModel = {
     page: (pagination?.page || 1) - 1,
     pageSize: pagination?.limit || 25,
   };
+
   const handleRefresh = useCallback(() => {
     setSearch("");
   }, [setSearch]);
+
+  const handleFilterModelChange = useCallback(
+    (newModel) => {
+      setFilterModel(newModel);
+
+      const newFilters = newModel.items.reduce((acc, item) => {
+        if (item.value) {
+          acc[item.field] = item.value;
+        }
+        return acc;
+      }, {});
+
+      setFilters(newFilters);
+    },
+    [setFilters]
+  );
 
   function ToolBox() {
     return (
@@ -297,6 +361,8 @@ export function ImagesPage() {
             onSortModelChange={handleSortModelChange}
             onRowClick={handleRowClick}
             selectionModel={selectedProduct ? selectedProduct._id : undefined}
+            filterModel={filterModel}
+            onFilterModelChange={handleFilterModelChange}
             components={{
               NoRowsOverlay: () => (
                 <CustomNoRowsOverlay
@@ -328,6 +394,7 @@ export function ImagesPage() {
                 outline: "none",
               },
             }}
+            localeText={esES.components.MuiDataGrid.defaultProps.localeText}
           />
         </Paper>
 

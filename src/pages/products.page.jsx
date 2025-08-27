@@ -81,7 +81,9 @@ export function ProductsPage() {
         header: "Laboratorio",
         minWidth: 100,
         editable: true,
-        type: "string",
+        type: "singleSelect",
+        valueOptions: labs,
+        editable: true,
         renderEditCell: (params) => <ItemSelect {...params} options={labs} />,
         render: (params) => {
           const selectedOption = labs.find((opt) => opt.value === params.value);
@@ -92,8 +94,9 @@ export function ProductsPage() {
         accessor: "category",
         header: "Categorías",
         minWidth: 135,
+        type: "singleSelect",
+        valueOptions: categories,
         editable: true,
-        type: "string",
         renderEditCell: (params) => (
           <ItemSelect {...params} options={categories} />
         ),

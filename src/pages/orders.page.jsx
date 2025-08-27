@@ -15,6 +15,7 @@ import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
 import { getOrders } from "../services/orderService";
 import { CRUDProvider, useCRUD } from "../hooks/context/useCRUD";
 import { useNavigate } from "react-router-dom";
+import { esES } from "@mui/x-data-grid/locales";
 
 export default function OrdersPageWrapper() {
   return (
@@ -212,6 +213,7 @@ export function OrdersPage() {
             ),
             LoadingOverlay: CircularProgress,
           }}
+          localeText={esES.components.MuiDataGrid.defaultProps.localeText}
         />
       </Paper>
     </PageContainer>

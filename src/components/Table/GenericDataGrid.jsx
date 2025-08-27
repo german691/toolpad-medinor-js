@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Box, Paper, Typography, CircularProgress } from "@mui/material";
+import { esES } from "@mui/x-data-grid/locales";
 
 export const CustomNoRowsOverlay = ({ message }) => (
   <Box
@@ -28,6 +29,8 @@ export const GenericDataGrid = ({
   onSortChange,
   isFullScreen,
   onEditChange,
+  filterModel,
+  onFilterModelChange,
 }) => {
   const gridColumns = React.useMemo(
     () =>
@@ -44,6 +47,8 @@ export const GenericDataGrid = ({
         flex: col.flex,
         editable: col.editable,
         renderEditCell: col.renderEditCell,
+        filterable: col.filterable !== undefined ? col.filterable : true,
+        valueOptions: col.valueOptions,
       })),
     [columns]
   );
@@ -138,6 +143,10 @@ export const GenericDataGrid = ({
         sortingMode="server"
         sortModel={sortModel}
         onSortModelChange={handleSortModelChange}
+        // --- manejo de filtrado
+        filterMode="server"
+        filterModel={filterModel}
+        onFilterModelChange={onFilterModelChange}
         // --- manejo de edición
         editMode="row"
         processRowUpdate={handleProcessRowUpdate}
@@ -147,6 +156,7 @@ export const GenericDataGrid = ({
         // ---------------------------------------
         rowHeight={40}
         sx={{ border: 0, flex: 1 }}
+        localeText={esES.components.MuiDataGrid.defaultProps.localeText}
       />
     </Paper>
   );
