@@ -254,7 +254,6 @@ export function ImagesPage() {
         headerName: "Categoría",
         minWidth: 135,
         type: "singleSelect",
-        filterable: true,
         valueOptions: categories,
       },
       {
