@@ -27,7 +27,6 @@ import { PageContainer } from "@toolpad/core";
 import { useParams, useNavigate } from "react-router-dom";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import { useSelector } from "react-redux";
 import { selectCurrentUserRole } from "../features/authSlice";
 import { getProductImages } from "../services/imageService";
@@ -89,6 +88,9 @@ const OrderItemRow = ({ item, onImageClick }) => {
       }}
     >
       <TableCell component="th" scope="row">
+        {item.product?.code || "N/A"}
+      </TableCell>
+      <TableCell component="th" scope="row">
         {item.product?.desc || "N/A"}
       </TableCell>
       <TableCell align="right">{item.quantity || "N/A"}</TableCell>
@@ -106,7 +108,6 @@ const OrderItemRow = ({ item, onImageClick }) => {
 export default function OrderDetailsPage() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const userRole = useSelector(selectCurrentUserRole);
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -308,6 +309,8 @@ export default function OrderDetailsPage() {
           <Table aria-label="Order details table">
             <TableHead>
               <TableRow>
+                <TableCell sx={{ fontWeight: "semibold" }}>Código</TableCell>
+
                 <TableCell sx={{ fontWeight: "semibold" }}>Producto</TableCell>
                 <TableCell align="right" sx={{ fontWeight: "semibold" }}>
                   Cantidad
