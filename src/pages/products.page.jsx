@@ -80,7 +80,6 @@ export function ProductsPage() {
         accessor: "lab",
         header: "Laboratorio",
         minWidth: 100,
-        editable: true,
         type: "singleSelect",
         valueOptions: labs,
         editable: true,

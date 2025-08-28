@@ -132,10 +132,10 @@ export const GenericDataGrid = ({
           NoRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
           LoadingOverlay: CircularProgress,
         }}
+        // --- manejo de paginación
         pagination
         paginationMode="server"
         rowCount={pagination?.total || 0}
-        // --- manejo de paginación
         paginationModel={paginationModel}
         onPaginationModelChange={handlePaginationModelChange}
         pageSizeOptions={[25, 50, 100]}

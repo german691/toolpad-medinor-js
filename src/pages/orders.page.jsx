@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -170,14 +170,18 @@ export function OrdersPage() {
           columns={columns}
           getRowId={(row) => row._id}
           loading={loading}
+          // --- manejo de paginación
+          pagination
           paginationMode="server"
-          rowCount={pagination?.totalItems || 0}
+          rowCount={pagination?.total || 0}
           paginationModel={paginationModel}
           onPaginationModelChange={handlePaginationModelChange}
           pageSizeOptions={[25, 50, 100]}
+          // --- manejo de ordenamiento
           sortingMode="server"
           sortModel={sortModel}
           onSortModelChange={handleSortModelChange}
+          // --- redirección
           onRowClick={handleRowClick}
           sx={{
             "& .MuiDataGrid-row:hover": {
