@@ -7,7 +7,7 @@ import {
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import getLabs from "../services/labService";
 import getCategories from "../services/categoryService";
 import ItemSelect from "../components/Select/ItemSelect";

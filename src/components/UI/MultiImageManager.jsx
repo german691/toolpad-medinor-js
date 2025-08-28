@@ -40,7 +40,7 @@ export default function MultiImageManager({
   const allImages = useMemo(() => {
     const formattedExisting = existingImages.map((img) => ({
       ...img,
-      id: img._id,
+      id: img.id,
       src: img.url,
       isNew: false,
       role: img.isMain ? "Principal" : "Secundaria",

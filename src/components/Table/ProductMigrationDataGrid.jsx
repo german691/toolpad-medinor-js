@@ -18,6 +18,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { DataGrid } from "@mui/x-data-grid";
 import { useProductMigrationContext } from "../../hooks/context/productMigrationProvider";
+import { esES } from "@mui/x-data-grid/locales";
 
 const mainColumns = [
   { field: "code", headerName: "Cód. Producto" },
