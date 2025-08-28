@@ -94,8 +94,11 @@ const crudReducer = (state, action) => {
 
 const CRUDContext = createContext();
 
-export const CRUDProvider = ({ children, services }) => {
-  const [state, dispatch] = useReducer(crudReducer, initialState);
+export const CRUDProvider = ({ children, services, initialFilters = {} }) => {
+  const [state, dispatch] = useReducer(crudReducer, {
+    ...initialState,
+    filters: initialFilters,
+  });
 
   const { getItems, getItemById, createItem, updateItem } = services;
   const fetchItems = async () => {

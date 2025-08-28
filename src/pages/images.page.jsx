@@ -33,13 +33,19 @@ import { esES } from "@mui/x-data-grid/locales";
 
 export default function ProductsImageWrapper() {
   return (
-    <ProductsProvider>
+    <ProductsProvider
+      initialFilters={{
+        categoryName: { $nin: ["ESTUCHADOS", "HOSPITALARIOS"] },
+      }}
+    >
       <ImagesPage />
     </ProductsProvider>
   );
 }
 
 export function ImagesPage() {
+  const categoryNamesToExclude = ["ESTUCHADOS", "HOSPITALARIOS"];
+
   const {
     items,
     pagination,
@@ -51,10 +57,18 @@ export function ImagesPage() {
     setSort,
     setSearch,
     setFilters,
+    fetchItems,
   } = useCRUD();
 
+  const mappedItems = useMemo(() => {
+    return (items || []).map((prod) => ({
+      ...prod,
+      image: Boolean(prod.mainImage) || prod.secondaryImages?.length > 0,
+    }));
+  }, [items]);
+
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [categories, setCategories] = useState([]);
+  // const [categories, setCategories] = useState([]);
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -110,23 +124,23 @@ export function ImagesPage() {
     fetchImages();
   }, [selectedProduct]);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getCategories();
-        const formattedCats = response.data.items.map((catObj) => ({
-          value: catObj.category,
-          label: catObj.category,
-          key: catObj.category,
-        }));
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       const response = await getCategories();
+  //       const formattedCats = response.data.items.map((catObj) => ({
+  //         value: catObj.category,
+  //         label: catObj.category,
+  //         key: catObj.category,
+  //       }));
 
-        setCategories(formattedCats);
-      } catch (error) {
-        console.error("Error al cargar las categorías:", error);
-      }
-    };
-    fetchCategories();
-  }, []);
+  //       setCategories(formattedCats);
+  //     } catch (error) {
+  //       console.error("Error al cargar las categorías:", error);
+  //     }
+  //   };
+  //   fetchCategories();
+  // }, []);
 
   const handleRowClick = (params) => {
     if (selectedProduct?._id === params.row._id) {
@@ -162,6 +176,7 @@ export function ImagesPage() {
       });
     } finally {
       setUploading(false);
+      fetchItems();
     }
   };
 
@@ -241,6 +256,7 @@ export function ImagesPage() {
         headerName: "Código",
         width: 120,
         filterable: false,
+        sortable: false,
       },
       {
         field: "desc",
@@ -248,19 +264,23 @@ export function ImagesPage() {
         flex: 1,
         minWidth: 225,
         filterable: false,
+        sortable: false,
       },
       {
         field: "lab",
         headerName: "Laboratorio",
         minWidth: 100,
         filterable: false,
+        sortable: false,
       },
       {
         field: "category",
         headerName: "Categoría",
         minWidth: 135,
         type: "singleSelect",
-        valueOptions: categories,
+        // valueOptions: categories,
+        filterable: false,
+        sortable: false,
       },
       {
         field: "image",
@@ -269,6 +289,7 @@ export function ImagesPage() {
         minWidth: 80,
         align: "center",
         filterable: false,
+        sortable: false,
       },
     ],
     []
@@ -352,7 +373,7 @@ export function ImagesPage() {
           variant="outlined"
         >
           <DataGrid
-            rows={items || []}
+            rows={mappedItems || []}
             columns={productColumns}
             getRowId={(row) => row._id}
             loading={loading}
@@ -399,6 +420,7 @@ export function ImagesPage() {
                 outline: "none",
               },
             }}
+            rowHeight={40}
             localeText={esES.components.MuiDataGrid.defaultProps.localeText}
           />
         </Paper>
@@ -448,7 +470,7 @@ export function ImagesPage() {
       <UploadByCodeDialog
         open={isUploadByCodeDialogOpen}
         onClose={() => setIsUploadByCodeDialogOpen(false)}
-        onUploadComplete={() => setSearch("")}
+        onUploadComplete={() => (fetchItems(), setSearch(""))}
       />
     </PageContainer>
   );
