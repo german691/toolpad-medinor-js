@@ -44,8 +44,6 @@ export default function ProductsImageWrapper() {
 }
 
 export function ImagesPage() {
-  const categoryNamesToExclude = ["ESTUCHADOS", "HOSPITALARIOS"];
-
   const {
     items,
     pagination,
