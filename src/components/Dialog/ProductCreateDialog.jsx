@@ -19,8 +19,27 @@ import {
 } from "@mui/material";
 import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
+import { z } from "zod";
 import getLabs from "../../services/labService";
 import getCategories from "../../services/categoryService";
+
+const productSchema = z.object({
+  code: z
+    .string()
+    .min(1, "El código es requerido")
+    .regex(/^[a-zA-Z0-9-ñÑ]*$/, "El código no debe tener caracteres especiales")
+    .max(50, "El código no puede tener más de 50 caracteres"),
+  notes: z.string().optional(),
+  lab: z.string().min(1, "El laboratorio es requerido"),
+  category: z.string().min(1, "La categoría es requerida"),
+  desc: z.string().min(1, "La descripción es un campo obligatorio"),
+  extra_desc: z.string().optional(),
+  iva: z.boolean().default(false),
+  listed: z.boolean().default(false),
+  medinor_price: z.number().nonnegative("El precio no puede ser negativo"),
+  public_price: z.number().nonnegative("El precio no puede ser negativo"),
+  price: z.number().nonnegative("El precio no puede ser negativo"),
+});
 
 const initialFormState = {
   code: "",
@@ -41,6 +60,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
   const [isSaving, setIsSaving] = useState(false);
   const [labs, setLabs] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [errors, setErrors] = useState({});
 
   const handleGetLabs = async () => {
     try {
@@ -68,6 +88,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
     handleGetLabs();
     handleGetCategories();
     setFormData(initialFormState);
+    setErrors({});
   }, [open]);
 
   const handleClose = () => {
@@ -78,6 +99,9 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleCheckboxChange = (e) => {
@@ -87,16 +111,27 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
 
   const handleSaveClick = async () => {
     setIsSaving(true);
+    const dataToSave = {
+      ...formData,
+      medinor_price: parseFloat(formData.medinor_price) || 0,
+      public_price: parseFloat(formData.public_price) || 0,
+      price: parseFloat(formData.price) || 0,
+    };
+
     try {
-      const dataToSave = {
-        ...formData,
-        medinor_price: parseFloat(formData.medinor_price) || 0,
-        public_price: parseFloat(formData.public_price) || 0,
-        price: parseFloat(formData.price) || 0,
-      };
+      productSchema.parse(dataToSave);
+      setErrors({});
+
       await onSave(dataToSave);
       handleClose();
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        const fieldErrors = {};
+        for (const issue of err.issues) {
+          fieldErrors[issue.path[0]] = issue.message;
+        }
+        setErrors(fieldErrors);
+      }
       console.error("Error al guardar el producto:", err);
     } finally {
       setIsSaving(false);
@@ -136,6 +171,8 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             type="text"
             value={formData.code}
             onChange={handleInputChange}
+            error={!!errors.code}
+            helperText={errors.code}
             sx={{ flex: 1 }}
           />
           <TextField
@@ -155,6 +192,8 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           type="text"
           value={formData.desc}
           onChange={handleInputChange}
+          error={!!errors.desc}
+          helperText={errors.desc}
         />
         <TextField
           multiline
@@ -173,6 +212,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
               name="lab"
               value={formData.lab}
               onChange={handleInputChange}
+              error={!!errors.lab}
             >
               {labs.map((labObj) => (
                 <MenuItem key={labObj.lab} value={labObj.lab}>
@@ -187,6 +227,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
               name="category"
               value={formData.category}
               onChange={handleInputChange}
+              error={!!errors.category}
             >
               {categories.map((catObj) => (
                 <MenuItem key={catObj.category} value={catObj.category}>
@@ -208,6 +249,8 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             type="number"
             value={formData.price}
             onChange={handleInputChange}
+            error={!!errors.price}
+            helperText={errors.price}
             sx={{ flex: 1 }}
           />
           <TextField
@@ -217,6 +260,8 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             type="number"
             value={formData.public_price}
             onChange={handleInputChange}
+            error={!!errors.public_price}
+            helperText={errors.public_price}
             sx={{ flex: 1 }}
           />
           <TextField
@@ -226,6 +271,8 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             type="number"
             value={formData.medinor_price}
             onChange={handleInputChange}
+            error={!!errors.medinor_price}
+            helperText={errors.medinor_price}
             sx={{ flex: 1 }}
           />
         </Box>
