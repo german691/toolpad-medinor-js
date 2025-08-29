@@ -1,7 +1,4 @@
-import { api, handleServiceError } from "../api";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://192.168.16.111:5000/api";
+import { api, API_BASE_URL, handleServiceError } from "../api";
 
 /**
  * Obtiene las imágenes existentes de un producto
