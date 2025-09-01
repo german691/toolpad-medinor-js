@@ -198,6 +198,8 @@ export function ImagesPage() {
           await deleteProductImage(selectedProduct._id, imageId);
           const updatedImages = await getProductImages(selectedProduct._id);
           setExistingImages(updatedImages);
+
+          await fetchItems();
         } catch (err) {
           console.error("Error al borrar la imagen", err);
           setNotification({
