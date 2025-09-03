@@ -24,6 +24,7 @@ const mainColumns = [
   { field: "COD_CLIENT", headerName: "Cód. Cliente", width: 150 },
   { field: "RAZON_SOCI", headerName: "Razón Social", flex: 1, minWidth: 250 },
   { field: "IDENTIFTRI", headerName: "Identificador Fiscal", width: 200 },
+  { field: "USERNAME_ASSIGNED", headerName: "Usuario Asignado", width: 220 },
 ];
 
 const errorColumns = [

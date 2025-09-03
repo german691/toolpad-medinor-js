@@ -1,9 +1,8 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 
-const normalizeHeaderKey = (header) => {
-  return header.replace(/\s+/g, "").replace(/\./g, "").toUpperCase();
-};
+const normalizeHeaderKey = (header) =>
+  header.replace(/\s+/g, "").replace(/\./g, "").toUpperCase();
 
 export const validateAndCleanProductData = (json) => {
   if (!json || json.length === 0) {
@@ -14,6 +13,7 @@ export const validateAndCleanProductData = (json) => {
 
   const firstRowHeaders = Object.keys(json[0] || {});
 
+  // Mapas de nombres posibles por columna
   const headerMap = {
     CODIGO: ["Codigo"],
     NOTASARTICULO: ["Notas ArtÃ­culo", "Notas Artículo"],
@@ -25,40 +25,73 @@ export const validateAndCleanProductData = (json) => {
     PRMEDINOR: ["Pr. Medinor"],
     PRPUBLICO: ["Pr. PÃºblico", "Pr. Público"],
     PRCOSTO: ["Pr. Costo"],
+
+    // NUEVO (opcional)
+    LEVEL: ["Level", "Nivel", "NIVEL", "LEVEL"],
   };
+
+  // Requeridas (LEVEL queda fuera)
+  const requiredNormalized = [
+    "CODIGO",
+    "LABORATORIO",
+    "DESCRIPCION",
+    "CATEGORIA",
+    "CODIVA",
+    "PRMEDINOR",
+    "PRPUBLICO",
+    "PRCOSTO",
+    "NOTASARTICULO",
+    "DESCRIPCIONADICIONAL",
+  ];
 
   const foundHeaders = {};
   const missingHeaders = [];
 
-  for (const expectedNormalizedHeader in headerMap) {
-    const possibleCsvNames = headerMap[expectedNormalizedHeader];
-    let found = false;
+  const tryFindHeader = (expectedNormalizedHeader, possibleCsvNames) => {
     for (const csvName of possibleCsvNames) {
       if (firstRowHeaders.includes(csvName)) {
-        foundHeaders[expectedNormalizedHeader] = csvName;
-        found = true;
-        break;
+        return csvName;
       }
     }
-    if (!found) {
-      const foundHeaderKey = firstRowHeaders.find(
-        (h) => normalizeHeaderKey(h) === expectedNormalizedHeader
-      );
-      if (foundHeaderKey) {
-        foundHeaders[expectedNormalizedHeader] = foundHeaderKey;
-        found = true;
-      }
-    }
-    if (!found) {
-      missingHeaders.push(expectedNormalizedHeader);
-    }
+    const foundKey = firstRowHeaders.find(
+      (h) => normalizeHeaderKey(h) === expectedNormalizedHeader
+    );
+    return foundKey || null;
+  };
+
+  // Resolver todas las cabeceras (incluye LEVEL, pero no lo exigimos)
+  for (const expectedNormalizedHeader in headerMap) {
+    const possibleCsvNames = headerMap[expectedNormalizedHeader];
+    const found = tryFindHeader(expectedNormalizedHeader, possibleCsvNames);
+    if (found) foundHeaders[expectedNormalizedHeader] = found;
+  }
+
+  // Verificar faltantes solo en requeridas
+  for (const key of requiredNormalized) {
+    if (!foundHeaders[key]) missingHeaders.push(key);
   }
 
   if (missingHeaders.length > 0) {
     throw new Error(
-      `El archivo de productos es inválido. Faltan las columnas requeridas: ${missingHeaders.join(", ")}. Por favor, verifique el archivo.`
+      `El archivo de productos es inválido. Faltan las columnas requeridas: ${missingHeaders.join(
+        ", "
+      )}. Por favor, verifique el archivo.`
     );
   }
+
+  const parseOptionalLevel = (raw) => {
+    if (raw === undefined || raw === null) return undefined;
+    if (typeof raw === "string" && raw.trim() === "") return undefined;
+
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+      return Math.trunc(raw);
+    }
+    if (typeof raw === "string") {
+      const s = raw.trim();
+      if (/^\d+$/.test(s)) return Math.trunc(Number(s));
+    }
+    return undefined;
+  };
 
   const seenProductCodes = new Set();
   const cleanedData = [];
@@ -67,10 +100,9 @@ export const validateAndCleanProductData = (json) => {
     const code = String(row[foundHeaders["CODIGO"]] || "").trim();
     const lab = String(row[foundHeaders["LABORATORIO"]] || "").trim();
     const desc = String(row[foundHeaders["DESCRIPCION"]] || "").trim();
-    // Corrected variable name from 'cateogry' to 'category' for consistency
     const category = String(row[foundHeaders["CATEGORIA"]] || "").trim();
 
-    if (!code || code === "" || !lab || lab === "" || !desc || desc === "") {
+    if (!code || !lab || !desc) {
       console.warn(
         `Saltando fila incompleta: Codigo='${code}', Lab='${lab}', Desc='${desc}'`,
         row
@@ -100,12 +132,17 @@ export const validateAndCleanProductData = (json) => {
         String(row[foundHeaders["PRCOSTO"]] || "0").replace(",", ".")
       ) || 0;
 
-    cleanedData.push({
-      code: code,
+    const levelRaw = foundHeaders["LEVEL"]
+      ? row[foundHeaders["LEVEL"]]
+      : undefined;
+    const parsedLevel = parseOptionalLevel(levelRaw);
+
+    const out = {
+      code,
       notes: String(row[foundHeaders["NOTASARTICULO"]] || "") || null,
-      category: category, // Using the corrected 'category' variable
-      lab: lab,
-      desc: desc,
+      category,
+      lab,
+      desc,
       extra_desc:
         String(row[foundHeaders["DESCRIPCIONADICIONAL"]] || "") || null,
       iva: hasIVA,
@@ -113,7 +150,11 @@ export const validateAndCleanProductData = (json) => {
       public_price: publicPrice,
       price: costPrice,
       imageUrl: null,
-    });
+    };
+
+    if (parsedLevel !== undefined) out.level = parsedLevel;
+
+    cleanedData.push(out);
   }
 
   if (cleanedData.length === 0) {

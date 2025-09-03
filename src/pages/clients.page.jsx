@@ -41,9 +41,9 @@ const clientColumns = [
   },
   {
     accessor: "createdAt",
-    header: "Fecha de Creación",
+    header: "F. Creación",
     width: 180,
-    render: (row) => new Date(row.createdAt).toLocaleDateString(),
+    render: (row) => row.createdAt,
   },
 ];
 
