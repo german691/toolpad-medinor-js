@@ -7,10 +7,10 @@ import {
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import getLabs from "../services/labService";
 import getCategories from "../services/categoryService";
 import ItemSelect from "../components/Select/ItemSelect";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 
 export function ProductsPage() {
   const { fetchItems } = useCRUD();
@@ -125,10 +125,16 @@ export function ProductsPage() {
         editable: true,
       },
       {
-        accessor: "discount",
-        header: "Descuento",
-        minWidth: 100,
+        accessor: "level",
+        header: "Nivel",
+        minWidth: 150,
+        editable: true,
       },
+      // {
+      //   accessor: "discount",
+      //   header: "Descuento",
+      //   minWidth: 100,
+      // },
       {
         accessor: "iva",
         header: "IVA",

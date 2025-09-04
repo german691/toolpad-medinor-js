@@ -32,6 +32,12 @@ const clientColumns = [
     editable: true,
   },
   {
+    accessor: "level",
+    header: "Nivel",
+    minWidth: 150,
+    editable: true,
+  },
+  {
     accessor: "active",
     header: "Activo",
     type: "boolean",
@@ -41,9 +47,9 @@ const clientColumns = [
   },
   {
     accessor: "createdAt",
-    header: "F. Creación",
+    header: "Fecha de Creación",
     width: 180,
-    render: (row) => row.createdAt,
+    render: (row) => new Date(row.createdAt).toLocaleDateString(),
   },
 ];
 
