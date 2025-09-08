@@ -185,7 +185,7 @@ export function GenericCRUDPage({
           </IconButton>
         </Tooltip>
         {isClientPage && (
-          <Tooltip title="Guardar cambios" arrow>
+          <Tooltip title="Restaurar Contraseña" arrow>
             <IconButton
               onClick={handleOpenRestPwdDialog}
               disabled={
