@@ -59,6 +59,10 @@ export function ClientsPage() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [isSnackOpen, setSnackOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState({});
+  const [selectedModel, setSelectedModel] = useState({
+    type: "include",
+    ids: new Set(),
+  });
 
   const handleAddClient = () => {
     setCreateDialogOpen(true);
@@ -132,6 +136,9 @@ export function ClientsPage() {
         onAdd={handleAddClient}
         onSave={handleSaveChanges}
         onUpdate={handleUpdateClient}
+        selectionModel={selectedModel}
+        onSelectionChange={(newModel) => setSelectedModel(newModel)}
+        isClientPage={true}
       />
       <ClientCreateDialog
         open={isCreateDialogOpen}

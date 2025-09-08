@@ -3,6 +3,11 @@ import {
   Alert,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Snackbar,
   Stack,
@@ -15,13 +20,23 @@ import {
   Cancel,
   Fullscreen,
   FullscreenExit,
+  LockReset,
   Refresh,
   Save,
 } from "@mui/icons-material";
 import { GenericDataGrid } from "../Table/GenericDataGrid";
 import Searchbox from "../UI/Searchbox";
+import { restoreClientPassword } from "../../services/clientService";
 
-export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
+export function GenericCRUDPage({
+  columns,
+  entityName,
+  onAdd,
+  onUpdate,
+  selectionModel,
+  onSelectionChange,
+  isClientPage = false,
+}) {
   const {
     items,
     pagination,
@@ -44,6 +59,16 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
 
   const [hasChanges, setHasChanges] = useState(false);
   const [modifiedRows, setModifiedRows] = useState({});
+  const [customError, setCustomError] = useState(null);
+  const [isRestPwdDialogOpen, setRestPwdDialogOpen] = useState(false);
+
+  const handleCloseRestPwdDialog = () => {
+    setRestPwdDialogOpen(false);
+  };
+
+  const handleOpenRestPwdDialog = () => {
+    setRestPwdDialogOpen(true);
+  };
 
   const handleRefresh = useCallback(() => {
     setSearch("");
@@ -90,6 +115,23 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
     [setFilters]
   );
 
+  const handleResetPassword = async () => {
+    const selectedCount = selectionModel?.ids?.size ?? 0;
+    if (selectedCount !== 1) {
+      setCustomError("Ocurrió un problema al seleccionar cliente");
+      handleCloseRestPwdDialog();
+      return;
+    }
+    try {
+      const selectedId = Array.from(selectionModel.ids)[0];
+      await restoreClientPassword(selectedId);
+      handleCloseRestPwdDialog();
+    } catch (error) {
+      setCustomError("Error inesperado al restaurar contraseña del cliente");
+      throw error;
+    }
+  };
+
   const mergedData = useMemo(() => {
     if (!items) return [];
     return items.map((row) => modifiedRows[row._id] || row);
@@ -103,6 +145,21 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
         justifyContent: "space-between",
       }}
     >
+      <Dialog open={isRestPwdDialogOpen} onClose={handleCloseRestPwdDialog}>
+        <DialogTitle>{"Restaurar contraseña"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Al hacer click en confirmar, el cliente volverá a tener como
+            contraseña el "identiftri" inicial
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseRestPwdDialog}>Cancelar</Button>
+          <Button onClick={handleResetPassword} autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Stack direction="row" spacing={2}>
         <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>
@@ -127,6 +184,18 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
             <Save />
           </IconButton>
         </Tooltip>
+        {isClientPage && (
+          <Tooltip title="Guardar cambios" arrow>
+            <IconButton
+              onClick={handleOpenRestPwdDialog}
+              disabled={
+                !selectionModel || (selectionModel.ids?.size ?? 0) !== 1
+              }
+            >
+              <LockReset />
+            </IconButton>
+          </Tooltip>
+        )}
       </Stack>
       <Stack direction="row" spacing={2}>
         <Searchbox setSearch={setSearch} />
@@ -178,10 +247,16 @@ export function GenericCRUDPage({ columns, entityName, onAdd, onUpdate }) {
           fetchItems={fetchItems}
           filterModel={filterModel}
           onFilterModelChange={handleFilterModelChange}
+          selectionModel={selectionModel}
+          onSelectionChange={onSelectionChange}
         />
-        <Snackbar open={error} autoHideDuration={6000} onClose={clearError}>
+        <Snackbar
+          open={error || customError}
+          autoHideDuration={6000}
+          onClose={clearError}
+        >
           <Alert severity="error" onClose={clearError} sx={{ width: "100%" }}>
-            {error?.message}
+            {error?.message || customError}
           </Alert>
         </Snackbar>
       </Box>

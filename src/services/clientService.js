@@ -79,6 +79,17 @@ export const bulkUpdateClients = async (clientData) => {
   }
 };
 
+export const restoreClientPassword = async (clientData) => {
+  try {
+    const response = await api.post("/clients/restore-password", {
+      id: clientData,
+    });
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
 export const clientService = {
   getItems: getClients,
   getItemById: getClientById,

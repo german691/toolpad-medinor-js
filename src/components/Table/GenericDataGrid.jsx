@@ -31,6 +31,8 @@ export const GenericDataGrid = ({
   onEditChange,
   filterModel,
   onFilterModelChange,
+  selectionModel,
+  onSelectionChange,
 }) => {
   const gridColumns = React.useMemo(
     () =>
@@ -128,10 +130,17 @@ export const GenericDataGrid = ({
         columns={gridColumns}
         getRowId={(row) => row._id}
         loading={loading}
-        components={{
-          NoRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
-          LoadingOverlay: CircularProgress,
+        slots={{
+          noRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
+          loadingOverlay: CircularProgress,
         }}
+        initialState={{}}
+        hideFooterSelectedRowCount
+        rowSelectionModel={selectionModel}
+        onRowSelectionModelChange={(newModel) => onSelectionChange?.(newModel)}
+        checkboxSelection={false}
+        disableRowSelectionOnClick={false}
+        disableMultipleRowSelection
         // --- manejo de paginación
         pagination
         paginationMode="server"

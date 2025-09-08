@@ -26,6 +26,10 @@ const mainColumns = [
   { field: "lab", headerName: "Laboratorio" },
   { field: "category", headerName: "Categoría" },
   {
+    field: "level",
+    headerName: "Nivel",
+  },
+  {
     field: "iva",
     headerName: "IVA",
     type: "boolean",
@@ -70,6 +74,12 @@ const errorColumns = [
     valueGetter: (_value, row) => row.data.lab,
   },
   {
+    field: "level",
+    headerName: "Nivel",
+    width: 120,
+    valueGetter: (_value, row) => row.data.level,
+  },
+  {
     field: "errors",
     headerName: "Motivo del Rechazo",
     flex: 1,
@@ -92,6 +102,11 @@ const conflictColumns = [
   { field: "desc", headerName: "Descripción", width: 250 },
   { field: "lab", headerName: "Laboratorio", width: 200 },
   { field: "category", headerName: "Categoría", width: 200 },
+  {
+    field: "level",
+    headerName: "Level",
+    width: 120,
+  },
   {
     field: "conflictReason",
     headerName: "Motivo del Conflicto",

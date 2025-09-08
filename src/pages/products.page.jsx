@@ -20,6 +20,10 @@ export function ProductsPage() {
   const [statusMessage, setStatusMessage] = useState({});
   const [labs, setLabs] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedModel, setSelectedModel] = useState({
+    type: "include",
+    ids: new Set(),
+  });
 
   useEffect(() => {
     const fetchLabs = async () => {
@@ -233,6 +237,8 @@ export function ProductsPage() {
         onAdd={handleAddProduct}
         onSave={handleSaveChanges}
         onUpdate={handleUpdateClient}
+        selectionModel={selectedModel}
+        onSelectionChange={(newModel) => setSelectedModel(newModel)}
       />
       <ProductCreateDialog
         open={isCreateDialogOpen}
