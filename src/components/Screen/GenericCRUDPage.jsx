@@ -61,6 +61,11 @@ export function GenericCRUDPage({
   const [modifiedRows, setModifiedRows] = useState({});
   const [customError, setCustomError] = useState(null);
   const [isRestPwdDialogOpen, setRestPwdDialogOpen] = useState(false);
+  const [isSuccessDialogOpen, setSuccessDialogOpen] = useState(false);
+
+  const handleSuccessDialogClose = () => {
+    setSuccessDialogOpen(false);
+  };
 
   const handleCloseRestPwdDialog = () => {
     setRestPwdDialogOpen(false);
@@ -126,6 +131,7 @@ export function GenericCRUDPage({
       const selectedId = Array.from(selectionModel.ids)[0];
       await restoreClientPassword(selectedId);
       handleCloseRestPwdDialog();
+      setSuccessDialogOpen(true);
     } catch (error) {
       setCustomError("Error inesperado al restaurar contraseña del cliente");
       throw error;
@@ -156,6 +162,20 @@ export function GenericCRUDPage({
         <DialogActions>
           <Button onClick={handleCloseRestPwdDialog}>Cancelar</Button>
           <Button onClick={handleResetPassword} autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={isSuccessDialogOpen} onClose={handleSuccessDialogClose}>
+        <DialogTitle>{"Contraseña restaurada correctamente"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            La contraseña fue correctamente reestablecida al "identiftri"
+            inicial
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSuccessDialogClose} autoFocus>
             Confirmar
           </Button>
         </DialogActions>
@@ -255,7 +275,13 @@ export function GenericCRUDPage({
           autoHideDuration={6000}
           onClose={clearError}
         >
-          <Alert severity="error" onClose={clearError} sx={{ width: "100%" }}>
+          <Alert
+            severity="error"
+            onClose={() => {
+              clearError(), setCustomError(null);
+            }}
+            sx={{ width: "100%" }}
+          >
             {error?.message || customError}
           </Alert>
         </Snackbar>
