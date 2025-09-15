@@ -10,21 +10,18 @@ import {
   Grid,
   Typography,
   CircularProgress,
-  Paper,
-  Chip,
   List,
   ListItem,
   ListItemText,
-  Collapse,
   Stack,
+  Snackbar,
+  Alert,
 } from "@mui/material";
-import {
-  CloudUpload,
-  CheckCircle,
-  Cancel,
-  ExpandMore as ExpandMoreIcon,
-} from "@mui/icons-material";
+import { AddCircle, CloudUpload, Save } from "@mui/icons-material";
 import { uploadImagesByCode } from "../../services/imageService";
+import { createProductsByCode } from "../../services/productService";
+
+/** ---------- Utils ---------- */
 
 function ImageViewer({ open, imageUrl, onClose }) {
   return (
@@ -38,6 +35,15 @@ function ImageViewer({ open, imageUrl, onClose }) {
   );
 }
 
+function extractCodeFromFilename(name) {
+  return String(name || "").replace(/\.[^/.]+$/, "");
+}
+
+const norm = (s) =>
+  String(s || "")
+    .trim()
+    .toUpperCase();
+
 export default function UploadByCodeDialog({
   open,
   onClose,
@@ -45,10 +51,22 @@ export default function UploadByCodeDialog({
 }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState(null);
-  const [viewingImage, setViewingImage] = useState(null);
-  const [showFailedDetails, setShowFailedDetails] = useState(false);
+  const [creatingMissing, setCreatingMissing] = useState(false);
+  const [reUploading, setReUploading] = useState(false);
 
+  const [uploadResult, setUploadResult] = useState(null);
+  const [completed, setCompleted] = useState(false);
+
+  const [viewingImage, setViewingImage] = useState(null);
+  const [snackStatus, setSnackStatus] = useState({
+    open: false,
+    variant: "success",
+    message: "",
+  });
+
+  const handleSetSnackStatus = (info) => setSnackStatus(info);
+
+  /** -------- Dropzone -------- */
   const onDrop = useCallback((acceptedFiles) => {
     const processedFiles = acceptedFiles.map((file) =>
       Object.assign(file, {
@@ -57,6 +75,8 @@ export default function UploadByCodeDialog({
       })
     );
     setFiles(processedFiles);
+    setUploadResult(null);
+    setCompleted(false);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -68,12 +88,42 @@ export default function UploadByCodeDialog({
     return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
   }, [files]);
 
+  const isBusy = uploading || creatingMissing || reUploading;
+  const hasResult = !!uploadResult;
+  const hasFailures = hasResult && uploadResult.failedUploads > 0;
+
+  const canUpload = files.length > 0 && !isBusy && !hasResult;
+  const canCreateAndReupload = hasFailures && !isBusy;
+  const canFinish = !isBusy && (completed || (!files.length && !hasResult));
+
+  /** -------- Handlers -------- */
+
   const handleUpload = async () => {
     setUploading(true);
     setUploadResult(null);
+    setCompleted(false);
     try {
       const result = await uploadImagesByCode(files);
       setUploadResult(result.data);
+
+      const allOk =
+        result?.data?.failedUploads === 0 &&
+        result?.data?.successfulUploads > 0;
+      setCompleted(allOk);
+
+      if (allOk) {
+        handleSetSnackStatus({
+          variant: "success",
+          message: "Todas las imágenes fueron subidas exitosamente.",
+          open: true,
+        });
+      } else if (result?.data?.failedUploads > 0) {
+        handleSetSnackStatus({
+          variant: "warning",
+          message: `${result.data.failedUploads} imágenes fallaron. Podés crear los productos faltantes y reintentar.`,
+          open: true,
+        });
+      }
     } catch (error) {
       console.error("Error en la subida masiva:", error);
       setUploadResult({
@@ -85,31 +135,168 @@ export default function UploadByCodeDialog({
           message: error.message || "Error de conexión",
         })),
       });
+      setCompleted(false);
+      handleSetSnackStatus({
+        variant: "error",
+        message: "Error en la subida masiva.",
+        open: true,
+      });
     } finally {
       setUploading(false);
     }
   };
 
+  const handleCreateMissingProds = async () => {
+    if (!uploadResult?.details?.length) return;
+
+    const initialErrors = uploadResult.details.filter(
+      (d) => d.status === "error"
+    );
+
+    const codesToCreate = Array.from(
+      new Set(initialErrors.map((d) => norm(extractCodeFromFilename(d.file))))
+    );
+    if (codesToCreate.length === 0) return;
+
+    try {
+      setCreatingMissing(true);
+
+      const response = await createProductsByCode(codesToCreate);
+      const createdCodes = Array.isArray(response?.data?.items)
+        ? response.data.items.map((p) => norm(p.code))
+        : [];
+
+      if (createdCodes.length === 0) {
+        handleSetSnackStatus({
+          variant: "warning",
+          message:
+            "No se recibieron códigos creados desde el backend (items vacío).",
+          open: true,
+        });
+        return;
+      }
+
+      handleSetSnackStatus({
+        variant: "success",
+        message: `Productos creados: ${createdCodes.length}. Re-subiendo imágenes...`,
+        open: true,
+      });
+
+      const createdSet = new Set(createdCodes);
+      const filesToRetry = files.filter((f) => createdSet.has(norm(f.code)));
+
+      if (filesToRetry.length === 0) {
+        handleSetSnackStatus({
+          variant: "warning",
+          message:
+            "No se encontraron imágenes que coincidan con los códigos creados.",
+          open: true,
+        });
+        return;
+      }
+
+      // 4) Re-subir
+      setReUploading(true);
+      const reuploadRes = await uploadImagesByCode(filesToRetry);
+      const reuploadData = reuploadRes?.data || {
+        successfulUploads: 0,
+        failedUploads: 0,
+        details: [],
+      };
+
+      const initialSuccess = uploadResult.successfulUploads || 0;
+      const reSuccess = reuploadData.successfulUploads || 0;
+
+      const initialErrorsNotRetried = initialErrors.filter(
+        (d) => !createdSet.has(norm(extractCodeFromFilename(d.file)))
+      );
+
+      const reuploadErrors = (reuploadData.details || []).filter(
+        (d) => d.status === "error"
+      );
+
+      const finalSuccessful = initialSuccess + reSuccess;
+      const finalErrorList = [...initialErrorsNotRetried, ...reuploadErrors];
+      const finalFailed = finalErrorList.length;
+
+      const finalResult = {
+        successfulUploads: finalSuccessful,
+        failedUploads: finalFailed,
+        details: finalErrorList,
+      };
+
+      setUploadResult(finalResult);
+
+      const allOk = finalFailed === 0 && finalSuccessful > 0;
+      setCompleted(allOk);
+
+      handleSetSnackStatus({
+        variant: allOk ? "success" : "warning",
+        message: allOk
+          ? "Re-subida completada. Todo OK."
+          : `Re-subida completada. Quedan ${finalFailed} fallas.`,
+        open: true,
+      });
+    } catch (err) {
+      console.error(err);
+      handleSetSnackStatus({
+        variant: "error",
+        message:
+          err?.message || "Error al crear faltantes o re-subir imágenes.",
+        open: true,
+      });
+    } finally {
+      setReUploading(false);
+      setCreatingMissing(false);
+    }
+  };
+
+  const handleExportCsv = () => {
+    if (!uploadResult?.details?.length) return;
+    const errorFiles = uploadResult.details; // ya son solo errores
+    const codes = Array.from(
+      new Set(
+        errorFiles.map((d) => extractCodeFromFilename(d.file)).filter(Boolean)
+      )
+    );
+    if (!codes.length) return;
+
+    const csvContent = codes.join(",");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `codigos_fallidos_${date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleClose = () => {
-    if (uploading) return;
+    if (isBusy) return;
+    const hadSuccess = uploadResult?.successfulUploads > 0;
     setFiles([]);
     setUploadResult(null);
-    setShowFailedDetails(false);
+    setCompleted(false);
     onClose();
-    if (uploadResult?.successfulUploads > 0) {
-      onUploadComplete();
-    }
+    if (hadSuccess) onUploadComplete();
   };
 
   const handleViewImage = (url) => setViewingImage(url);
   const handleCloseViewer = () => setViewingImage(null);
 
+  /** -------- Render -------- */
+
   return (
     <>
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
-        <DialogTitle>Añadir Imágenes por Código de Producto</DialogTitle>
-        <DialogContent dividers>
-          {!uploadResult && (
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>Subir imágenes por código de producto</DialogTitle>
+
+        <DialogContent dividers sx={{ px: 2 }}>
+          {!hasResult && (
             <Box>
               {files.length < 1 && (
                 <Box
@@ -121,7 +308,6 @@ export default function UploadByCodeDialog({
                     textAlign: "center",
                     cursor: "pointer",
                     bgcolor: isDragActive ? "action.hover" : "transparent",
-                    mb: files.length > 0 ? 2 : 0,
                   }}
                 >
                   <input {...getInputProps()} />
@@ -139,10 +325,7 @@ export default function UploadByCodeDialog({
               )}
 
               {files.length > 0 && (
-                <Paper
-                  variant="outlined"
-                  sx={{ p: 1, maxHeight: "40vh", overflowY: "auto" }}
-                >
+                <Box sx={{ p: 1, maxHeight: "40vh", overflowY: "auto" }}>
                   <Grid container spacing={2}>
                     {files.map((file, index) => (
                       <Grid item xs={4} sm={3} md={2} key={file.name + index}>
@@ -166,7 +349,7 @@ export default function UploadByCodeDialog({
                       </Grid>
                     ))}
                   </Grid>
-                </Paper>
+                </Box>
               )}
             </Box>
           )}
@@ -186,100 +369,128 @@ export default function UploadByCodeDialog({
             </Box>
           )}
 
-          {uploadResult && (
-            <Box sx={{ p: 2, textAlign: "center" }}>
-              <Typography variant="h6">Proceso Terminado</Typography>
+          {hasResult && (
+            <>
               <Stack
                 direction="row"
-                spacing={2}
-                justifyContent="center"
-                sx={{ my: 2 }}
+                justifyContent="space-between"
+                sx={{ mb: 1 }}
               >
-                <Chip
-                  icon={<CheckCircle />}
-                  label={`Éxito: ${uploadResult.successfulUploads}`}
-                  color="success"
-                />
-                <Chip
-                  icon={<Cancel />}
-                  label={`Fallaron: ${uploadResult.failedUploads}`}
-                  color="error"
-                />
+                <Typography>
+                  {completed
+                    ? `Listo: ${uploadResult.successfulUploads} imágenes subidas correctamente.`
+                    : uploadResult.failedUploads > 0
+                      ? `${uploadResult.failedUploads} de ${
+                          uploadResult.failedUploads +
+                          uploadResult.successfulUploads
+                        } imágenes han fallado:`
+                      : "Todas las imágenes fueron subidas exitosamente."}
+                </Typography>
               </Stack>
+
               {uploadResult.failedUploads > 0 && (
                 <Box>
-                  <Button
-                    onClick={() => setShowFailedDetails(!showFailedDetails)}
-                    endIcon={
-                      <ExpandMoreIcon
-                        sx={{
-                          transform: showFailedDetails
-                            ? "rotate(180deg)"
-                            : "rotate(0deg)",
-                          transition: "0.2s",
-                        }}
-                      />
-                    }
+                  <Box
+                    sx={{
+                      maxHeight: "40vh",
+                      overflow: "auto",
+                      textAlign: "left",
+                      mt: 0,
+                    }}
                   >
-                    Ver detalles de errores
-                  </Button>
-                  <Collapse in={showFailedDetails}>
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        maxHeight: 200,
-                        overflow: "auto",
-                        mt: 1,
-                        textAlign: "left",
-                      }}
-                    >
-                      <List dense>
-                        {uploadResult.details
-                          .filter((d) => d.status === "error")
-                          .map((detail, index) => (
-                            <ListItem key={index}>
-                              <ListItemText
-                                primary={detail.file}
-                                secondary={detail.message}
-                              />
-                            </ListItem>
-                          ))}
-                      </List>
-                    </Paper>
-                  </Collapse>
+                    <List dense>
+                      {uploadResult.details.map((detail, index) => (
+                        <ListItem key={index} sx={{ px: 0 }}>
+                          <ListItemText
+                            primary={detail.file}
+                            secondary={detail.message}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
                 </Box>
               )}
-            </Box>
+            </>
           )}
         </DialogContent>
+
+        {/* -------- Acciones -------- */}
         <DialogActions>
-          {!uploadResult ? (
+          <Button onClick={handleClose} disabled={isBusy}>
+            Cancelar
+          </Button>
+
+          {canUpload && (
+            <Button
+              onClick={handleUpload}
+              variant="contained"
+              disabled={!canUpload}
+            >
+              {uploading ? (
+                <CircularProgress size={24} />
+              ) : (
+                `Subir ${files.length} Imágenes`
+              )}
+            </Button>
+          )}
+
+          {canCreateAndReupload && (
             <>
-              <Button onClick={handleClose} disabled={uploading}>
-                Cancelar
+              <Button
+                onClick={handleCreateMissingProds}
+                variant="outlined"
+                disableElevation
+                startIcon={<AddCircle />}
+                disabled={!canCreateAndReupload}
+              >
+                {creatingMissing || reUploading
+                  ? "Procesando..."
+                  : "Crear y subir imágenes"}
               </Button>
               <Button
-                onClick={handleUpload}
-                variant="contained"
-                disabled={files.length === 0 || uploading}
+                onClick={handleExportCsv}
+                variant="outlined"
+                disableElevation
+                startIcon={<Save />}
+                disabled={isBusy}
               >
-                {uploading ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  `Subir ${files.length} Imágenes`
-                )}
+                Exportar CSV
               </Button>
             </>
-          ) : (
-            <Button onClick={handleClose}>Cerrar</Button>
+          )}
+
+          {canFinish && (
+            <Button
+              onClick={handleClose}
+              variant="contained"
+              disableElevation
+              disabled={!canFinish}
+            >
+              Finalizar
+            </Button>
           )}
         </DialogActions>
       </Dialog>
+
       <ImageViewer
         open={!!viewingImage}
         imageUrl={viewingImage}
         onClose={handleCloseViewer}
       />
+
+      <Snackbar
+        open={snackStatus.open}
+        autoHideDuration={10000}
+        onClose={() => setSnackStatus((s) => ({ ...s, open: false }))}
+      >
+        <Alert
+          onClose={() => setSnackStatus((s) => ({ ...s, open: false }))}
+          severity={snackStatus.variant}
+        >
+          {snackStatus.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

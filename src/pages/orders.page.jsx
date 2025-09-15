@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -8,6 +8,8 @@ import {
   Tooltip,
   IconButton,
   Typography,
+  Button,
+  ButtonGroup,
 } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
 import Searchbox from "../components/UI/Searchbox";
@@ -36,7 +38,10 @@ export function OrdersPage() {
     setLimit,
     setSort,
     setSearch,
+    setFilters,
   } = useCRUD();
+
+  const [isFilteringBy, setFilteringBy] = useState("");
 
   const navigate = useNavigate();
 
@@ -47,6 +52,14 @@ export function OrdersPage() {
   const handleRefresh = useCallback(() => {
     setSearch("");
   }, [setSearch]);
+
+  const handleSetFilters = useCallback(
+    (value = "") => {
+      setFilters({ closed: value });
+      setFilteringBy(value);
+    },
+    [setFilters]
+  );
 
   const columns = useMemo(
     () => [
@@ -148,13 +161,41 @@ export function OrdersPage() {
 
   return (
     <PageContainer maxWidth={false}>
-      <Stack direction="row" sx={{ mb: 2 }} spacing={1}>
-        <Searchbox setSearch={setSearch} placeholder="Buscar por cliente..." />
-        <Tooltip title="Actualizar" arrow>
-          <IconButton onClick={handleRefresh}>
-            <Refresh />
-          </IconButton>
-        </Tooltip>
+      <Stack direction="row" sx={{ mb: 2 }} justifyContent={"space-between"}>
+        <Stack direction="row" gap={1}>
+          <Searchbox
+            setSearch={setSearch}
+            placeholder="Buscar por cliente..."
+          />
+          <Tooltip title="Actualizar" arrow>
+            <IconButton onClick={handleRefresh}>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+        <ButtonGroup variant="contained" disableElevation>
+          <Button
+            sx={{ width: "120px" }}
+            onClick={() => handleSetFilters("false")}
+            disabled={isFilteringBy === "false"}
+          >
+            Pendientes
+          </Button>
+          <Button
+            sx={{ width: "120px" }}
+            onClick={() => handleSetFilters("true")}
+            disabled={isFilteringBy === "true"}
+          >
+            Cerrados
+          </Button>
+          <Button
+            sx={{ width: "120px" }}
+            onClick={() => handleSetFilters("")}
+            disabled={isFilteringBy === ""}
+          >
+            Todos
+          </Button>
+        </ButtonGroup>
       </Stack>
       <Paper
         sx={{

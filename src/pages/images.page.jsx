@@ -66,7 +66,6 @@ export function ImagesPage() {
   }, [items]);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
-  // const [categories, setCategories] = useState([]);
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -121,24 +120,6 @@ export function ImagesPage() {
 
     fetchImages();
   }, [selectedProduct]);
-
-  // useEffect(() => {
-  //   const fetchCategories = async () => {
-  //     try {
-  //       const response = await getCategories();
-  //       const formattedCats = response.data.items.map((catObj) => ({
-  //         value: catObj.category,
-  //         label: catObj.category,
-  //         key: catObj.category,
-  //       }));
-
-  //       setCategories(formattedCats);
-  //     } catch (error) {
-  //       console.error("Error al cargar las categorías:", error);
-  //     }
-  //   };
-  //   fetchCategories();
-  // }, []);
 
   const handleRowClick = (params) => {
     if (selectedProduct?._id === params.row._id) {
@@ -278,7 +259,6 @@ export function ImagesPage() {
         headerName: "Categoría",
         minWidth: 135,
         type: "singleSelect",
-        // valueOptions: categories,
         filterable: false,
         sortable: false,
       },

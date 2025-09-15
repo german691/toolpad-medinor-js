@@ -62,6 +62,17 @@ export const createNewProduct = async (productData) => {
   }
 };
 
+export const createProductsByCode = async (productData) => {
+  try {
+    const response = await api.post("/products/add-by-code", {
+      codes: productData,
+    });
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
 export const updateProductById = async (id, productData) => {
   try {
     const response = await api.put(`/products/update/${id}`, productData);
