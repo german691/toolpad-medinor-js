@@ -7,14 +7,20 @@ import { DataGrid } from "@mui/x-data-grid";
 import {
   Box,
   Button,
+  ButtonGroup,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Tooltip,
 } from "@mui/material";
@@ -54,6 +60,7 @@ export function ImagesPage() {
     setLimit,
     setSort,
     setSearch,
+    filters,
     setFilters,
     fetchItems,
   } = useCRUD();
@@ -71,8 +78,14 @@ export function ImagesPage() {
   const [newImages, setNewImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [hasImageFilter, setImageFilter] = useState("");
   const [isUploadByCodeDialogOpen, setIsUploadByCodeDialogOpen] =
     useState(false);
+
+  const handleImageFilterChange = (event) => {
+    setImageFilter(event.target.value);
+    setFilters({ ...filters, images: event.target.value });
+  };
 
   const hasPrincipalImage = useMemo(() => {
     const existingHasMain = existingImages.some((img) => img.isMain);
@@ -320,12 +333,24 @@ export function ImagesPage() {
     return (
       <Stack direction="row" sx={{ mb: 2 }} spacing={1}>
         <Searchbox setSearch={setSearch} />
+        <FormControl sx={{ minWidth: 150 }} size="small">
+          <InputLabel>Filtrar</InputLabel>
+          <Select
+            value={hasImageFilter}
+            onChange={handleImageFilterChange}
+            label="Filtrar por:"
+          >
+            <MenuItem value={"any"}>Todos</MenuItem>
+            <MenuItem value={"false"}>Sin imagen</MenuItem>
+            <MenuItem value={"true"}>Con imagen</MenuItem>
+          </Select>
+        </FormControl>
         <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>
             <Refresh />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Añadir imágenes por código de productop" arrow>
+        <Tooltip title="Añadir imágenes por código de producto" arrow>
           <IconButton onClick={() => setIsUploadByCodeDialogOpen(true)}>
             <AddPhotoAlternate />
           </IconButton>
