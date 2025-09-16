@@ -9,24 +9,23 @@ import {
   DialogContentText,
   DialogTitle,
   FormControl,
-  FormControlLabel,
   IconButton,
+  Input,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
   Snackbar,
   Stack,
-  Switch,
+  TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useCRUD } from "../../hooks/context/useCRUD";
 import {
   Add,
   Cancel,
-  Check,
-  Close,
-  FindInPage,
   Fullscreen,
   FullscreenExit,
   LocalOffer,
@@ -37,6 +36,10 @@ import {
 import { GenericDataGrid } from "../Table/GenericDataGrid";
 import Searchbox from "../UI/Searchbox";
 import { restoreClientPassword } from "../../services/clientService";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import dayjs from "dayjs";
 
 export function GenericCRUDPage({
   columns,
@@ -74,6 +77,15 @@ export function GenericCRUDPage({
   const [isRestPwdDialogOpen, setRestPwdDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setSuccessDialogOpen] = useState(false);
   const [hasOfferActive, setOfferActive] = useState(false);
+  const [isOfferDialogOpen, setOfferDialogOpen] = useState(false);
+
+  const handleOpenOfferDialog = () => {
+    setOfferDialogOpen(true);
+  };
+
+  const handleCloseOfferDialog = () => {
+    setOfferDialogOpen(false);
+  };
 
   const handleOfferActive = (event) => {
     setOfferActive(event.target.checked);
@@ -236,7 +248,7 @@ export function GenericCRUDPage({
           <>
             <Tooltip title="Añadir oferta" arrow>
               <IconButton
-                // onClick={handleOpenRestPwdDialog}
+                onClick={handleOpenOfferDialog}
                 disabled={
                   !selectionModel || (selectionModel.ids?.size ?? 0) !== 1
                 }
@@ -328,6 +340,41 @@ export function GenericCRUDPage({
           </Alert>
         </Snackbar>
       </Box>
+      <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+        <Dialog onClose={handleCloseOfferDialog} open={isOfferDialogOpen}>
+          <DialogTitle>Establecer oferta:</DialogTitle>
+          <DialogContent>
+            <Typography color="textSecondary">
+              Determine el período de vigencia y porcentajae de la oferta:
+            </Typography>
+            <Stack direction={"row"} spacing={2} sx={{ mt: 3 }}>
+              <DatePicker
+                label="Inicia"
+                defaultValue={dayjs().startOf("day")}
+              />
+              <DatePicker
+                label="Finaliza"
+                defaultValue={dayjs().startOf("day")}
+              />
+              <TextField
+                label="Porcentaje"
+                variant="outlined"
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="start">%</InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseOfferDialog}>Cancelar</Button>
+            <Button onClick={handleCloseOfferDialog}>Aceptar</Button>
+          </DialogActions>
+        </Dialog>
+      </LocalizationProvider>
     </PageContainer>
   );
 }
