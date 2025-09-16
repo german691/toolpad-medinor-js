@@ -239,6 +239,7 @@ export function ProductsPage() {
         onUpdate={handleUpdateClient}
         selectionModel={selectedModel}
         onSelectionChange={(newModel) => setSelectedModel(newModel)}
+        isProductPage={true}
       />
       <ProductCreateDialog
         open={isCreateDialogOpen}

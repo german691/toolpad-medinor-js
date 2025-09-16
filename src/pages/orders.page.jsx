@@ -8,8 +8,6 @@ import {
   Tooltip,
   IconButton,
   Typography,
-  Button,
-  ButtonGroup,
   FormControl,
   InputLabel,
   Select,
@@ -169,7 +167,7 @@ export function OrdersPage() {
             placeholder="Buscar por cliente..."
           />
           <FormControl sx={{ minWidth: 150 }} size="small">
-            <InputLabel>Filtrar</InputLabel>
+            <InputLabel>Filtrar por:</InputLabel>
             <Select
               value={isFilteringBy}
               onChange={handleChangeFilters}

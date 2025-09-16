@@ -1,20 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useCRUD } from "../hooks/context/useCRUD";
-import getCategories from "../services/categoryService";
 import { ProductsProvider } from "../hooks/context/productWrapper";
 import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
 import {
   Box,
   Button,
-  ButtonGroup,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -78,13 +75,14 @@ export function ImagesPage() {
   const [newImages, setNewImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [hasImageFilter, setImageFilter] = useState("");
+  const [hasImageFilter, setImageFilter] = useState("any");
   const [isUploadByCodeDialogOpen, setIsUploadByCodeDialogOpen] =
     useState(false);
 
   const handleImageFilterChange = (event) => {
-    setImageFilter(event.target.value);
-    setFilters({ ...filters, images: event.target.value });
+    const value = event.target.value;
+    setImageFilter(value);
+    setFilters({ ...filters, images: value === "any" ? "any" : value });
   };
 
   const hasPrincipalImage = useMemo(() => {
@@ -334,13 +332,15 @@ export function ImagesPage() {
       <Stack direction="row" sx={{ mb: 2 }} spacing={1}>
         <Searchbox setSearch={setSearch} />
         <FormControl sx={{ minWidth: 150 }} size="small">
-          <InputLabel>Filtrar</InputLabel>
+          <InputLabel>Filtrar por:</InputLabel>
           <Select
             value={hasImageFilter}
             onChange={handleImageFilterChange}
             label="Filtrar por:"
           >
-            <MenuItem value={"any"}>Todos</MenuItem>
+            <MenuItem value={"any"} selected>
+              Todos
+            </MenuItem>
             <MenuItem value={"false"}>Sin imagen</MenuItem>
             <MenuItem value={"true"}>Con imagen</MenuItem>
           </Select>

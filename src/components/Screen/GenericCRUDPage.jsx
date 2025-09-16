@@ -8,9 +8,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControl,
+  FormControlLabel,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Snackbar,
   Stack,
+  Switch,
   Tooltip,
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
@@ -18,8 +24,12 @@ import { useCRUD } from "../../hooks/context/useCRUD";
 import {
   Add,
   Cancel,
+  Check,
+  Close,
+  FindInPage,
   Fullscreen,
   FullscreenExit,
+  LocalOffer,
   LockReset,
   Refresh,
   Save,
@@ -36,6 +46,7 @@ export function GenericCRUDPage({
   selectionModel,
   onSelectionChange,
   isClientPage = false,
+  isProductPage = false,
 }) {
   const {
     items,
@@ -62,6 +73,11 @@ export function GenericCRUDPage({
   const [customError, setCustomError] = useState(null);
   const [isRestPwdDialogOpen, setRestPwdDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [hasOfferActive, setOfferActive] = useState(false);
+
+  const handleOfferActive = (event) => {
+    setOfferActive(event.target.checked);
+  };
 
   const handleSuccessDialogClose = () => {
     setSuccessDialogOpen(false);
@@ -215,6 +231,32 @@ export function GenericCRUDPage({
               <LockReset />
             </IconButton>
           </Tooltip>
+        )}
+        {isProductPage && (
+          <>
+            <Tooltip title="Añadir oferta" arrow>
+              <IconButton
+                // onClick={handleOpenRestPwdDialog}
+                disabled={
+                  !selectionModel || (selectionModel.ids?.size ?? 0) !== 1
+                }
+              >
+                <LocalOffer />
+              </IconButton>
+            </Tooltip>
+            <FormControl sx={{ minWidth: 200 }} size="small">
+              <InputLabel>Filtrar ofertas:</InputLabel>
+              <Select
+                value={hasOfferActive}
+                onChange={handleOfferActive}
+                label="Filtrar ofertas:"
+              >
+                <MenuItem value={"any"}>Cualquiera</MenuItem>
+                <MenuItem value={"false"}>Contiene</MenuItem>
+                <MenuItem value={"true"}>No contiene</MenuItem>
+              </Select>
+            </FormControl>
+          </>
         )}
       </Stack>
       <Stack direction="row" spacing={2}>
