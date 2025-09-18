@@ -5,12 +5,16 @@ import {
   createNewProduct,
 } from "../services/productService";
 import { useCRUD } from "../hooks/context/useCRUD";
-import { Alert, AlertTitle, Snackbar } from "@mui/material";
+import { Alert, AlertTitle, Chip, Snackbar, Stack, Tooltip, Typography } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
 import getLabs from "../services/labService";
 import getCategories from "../services/categoryService";
 import ItemSelect from "../components/Select/ItemSelect";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
+import dayjs from "dayjs";
+import { ClearRounded, LocalOffer } from "@mui/icons-material";
+import { Box } from "@mui/system";
+import { formatDate } from "../func/formatDate";
 
 export function ProductsPage() {
   const { fetchItems } = useCRUD();
@@ -131,7 +135,7 @@ export function ProductsPage() {
       {
         accessor: "level",
         header: "Nivel",
-        minWidth: 150,
+        minWidth: 80,
         editable: true,
       },
       // {
@@ -156,11 +160,48 @@ export function ProductsPage() {
         editable: true,
       },
       {
+      accessor: "offer",
+      header: "Oferta",
+      minWidth: 100,
+      align: "center",
+      sortable: false,
+      filterable: false,
+      renderCell: ({ value }) => {
+        const o = value;
+        if (o && o.percent != null && o.startsAt && o.endsAt) {
+          const s = dayjs(o.startsAt);
+          const e = dayjs(o.endsAt);
+          return (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "center", height: "100%" }}>
+              <Tooltip title={`${s.format("DD/MM/YYYY")} - ${e.format("DD/MM/YYYY")}`}>
+                <Chip
+                  size="small"
+                  icon={<LocalOffer fontSize="small" />}
+                  label={`${o.percent}%`}
+                  variant="outlined"
+                  color="success"
+                  sx={{px: 1}}
+                />
+                {/* <Typography variant="body2">{`${s.format("DD/MM")} - ${e.format("DD/MM")}`}</Typography> */}
+              </Tooltip>
+            </Stack>
+          );
+        }
+        return (
+          <Box sx={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "center", height: "100%" }}>
+            <Tooltip title={"Sin ofertas"}>
+              <ClearRounded color="disabled" fontSize="small" />
+            </Tooltip>
+          </Box>
+        );
+      }
+    },
+      {
         accessor: "createdAt",
         header: "F. Creación",
         width: 100,
-        render: (row) => new Date(row.createdAt).toLocaleDateString(),
-      },
+        renderCell: ({ value, row }) => formatDate(value ?? row?.createdAt),
+      }
     ],
     [labs]
   );

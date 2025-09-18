@@ -5,6 +5,7 @@ import { bulkUpdateClients, createNewClient } from "../services/clientService";
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
+import { formatDate } from "../func/formatDate";
 
 const clientColumns = [
   {
@@ -47,9 +48,9 @@ const clientColumns = [
   },
   {
     accessor: "createdAt",
-    header: "Fecha de Creación",
+    header: "F. Creación",
     width: 180,
-    render: (row) => new Date(row.createdAt).toLocaleDateString(),
+    renderCell: ({ value, row }) => formatDate(value ?? row?.createdAt),
   },
 ];
 

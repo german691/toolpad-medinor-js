@@ -91,6 +91,33 @@ export const bulkUpdateProducts = async (productData) => {
   }
 };
 
+export const setProductOffer = async ({ productId, offer }) => {
+  try {
+    const response = await api.post(`/products/${productId}/offer`, offer);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const deleteProductOffer = async ({ productId }) => {
+  try {
+    const response = await api.delete(`/products/${productId}/offer`);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const checkProductOffer = async ({ productId }) => {
+  try {
+    const response = await api.get(`/products/${productId}/offer`);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
 export const productService = {
   getItems: getProducts,
   getItemById: getProductById,

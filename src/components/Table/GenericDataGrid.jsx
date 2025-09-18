@@ -42,15 +42,24 @@ export const GenericDataGrid = ({
         sortable: col.sortable,
         align: col.align || "left",
         headerAlign: col.align || "left",
-        renderCell: col.render ? (params) => col.render(params.row) : undefined,
         type: col.type,
         width: col.width,
         minWidth: col.minWidth,
         flex: col.flex,
         editable: col.editable,
-        renderEditCell: col.renderEditCell,
         filterable: col.filterable !== undefined ? col.filterable : true,
         valueOptions: col.valueOptions,
+        renderCell:
+        col.renderCell
+          ? (params) => col.renderCell({ row: params.row, value: params.value })
+          : col.render
+          ? (params) => col.render({ row: params.row, value: params.value })
+          : undefined,
+        renderEditCell: col.renderEditCell,
+        valueGetter: col.valueGetter
+          ? (params) => col.valueGetter({ row: params.row, value: params.value })
+          : undefined,
+        sortComparator: col.sortComparator,
       })),
     [columns]
   );
@@ -163,8 +172,8 @@ export const GenericDataGrid = ({
         // ver si se puede implementar con snackbar
         onProcessRowUpdateError={(error) => console.error(error)}
         // ---------------------------------------
-        rowHeight={40}
-        sx={{ border: 0, flex: 1 }}
+        rowHeight={35}
+        sx={{ border: 0, flex: 1, fontSize:".8rem" }}
         localeText={esES.components.MuiDataGrid.defaultProps.localeText}
       />
     </Paper>
