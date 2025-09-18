@@ -50,7 +50,9 @@ const toStartOfDayISO = (d) => dayjs(d).startOf("day").toISOString();
 const toEndOfDayISO = (d) => dayjs(d).endOf("day").toISOString();
 const getSelectedCount = (selectionModel) => selectionModel?.ids?.size ?? 0;
 const getSingleSelectedId = (selectionModel) =>
-  getSelectedCount(selectionModel) === 1 ? Array.from(selectionModel.ids)[0] : null;
+  getSelectedCount(selectionModel) === 1
+    ? Array.from(selectionModel.ids)[0]
+    : null;
 
 const hasOfferField = (row) => !!row?.offer;
 
@@ -58,12 +60,7 @@ const getDisplayName = (row, { isProductPage, isClientPage }) => {
   if (!row) return "";
   if (isProductPage) return row.desc || row.code || row._id || "";
   if (isClientPage)
-    return (
-      row.razon_soci ||
-      row.nickname ||
-      row.identiftri ||
-      ""
-    );
+    return row.razon_soci || row.nickname || row.identiftri || "";
   return row.desc || row.title || "";
 };
 
@@ -78,6 +75,7 @@ export function GenericCRUDPage({
   isProductPage = false,
 }) {
   const {
+    filters,
     items,
     pagination,
     loading,
@@ -108,7 +106,7 @@ export function GenericCRUDPage({
   const [productHasOffer, setProductHasOffer] = useState(false);
   const [isRestPwdDialogOpen, setRestPwdDialogOpen] = useState(false);
   const [isClearOfferDialogOpen, setClearOfferDialogOpen] = useState(false);
-  const [hasOfferActive, setOfferActive] = useState("any"); // any | true | false
+  const [hasOfferFilter, setOfferFilter] = useState("any"); // any | true | false
   const [isOfferDialogOpen, setOfferDialogOpen] = useState(false);
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   const [offerForm, setOfferForm] = useState({
@@ -176,16 +174,6 @@ export function GenericCRUDPage({
     return items.map((row) => modifiedRows[row._id] || row);
   }, [items, modifiedRows]);
 
-  const filteredAndMergedData = useMemo(() => {
-    let base = mergedAllData;
-    if (hasOfferActive === "true") {
-      base = base.filter(hasOfferField); 
-    } else if (hasOfferActive === "false") {
-      base = base.filter((r) => !hasOfferField(r)); 
-    }
-    return base;
-  }, [mergedAllData, hasOfferActive]);
-
   const selectedRow = useMemo(() => {
     const selectedId = getSingleSelectedId(selectionModel);
     if (!selectedId) return null;
@@ -213,7 +201,10 @@ export function GenericCRUDPage({
       setRestPwdDialogOpen(false);
       showSnack("Contraseña restaurada correctamente", "success");
     } catch (e) {
-      showSnack("Error inesperado al restaurar contraseña del cliente", "error");
+      showSnack(
+        "Error inesperado al restaurar contraseña del cliente",
+        "error"
+      );
     }
   }, [selectionModel, showSnack]);
 
@@ -234,55 +225,74 @@ export function GenericCRUDPage({
     }
   }, [selectionModel, showSnack, fetchItems]);
 
-  const handleOpenOfferDialog = useCallback(() => setOfferDialogOpen(true), []);
-  const handleCloseOfferDialog = useCallback(() => setOfferDialogOpen(false), []);
-  const handleOfferActiveChange = useCallback((event) => {
-    setOfferActive(event.target.value);
-  }, []);
+  const handleOfferFilterChange = (event) => {
+    const value = event.target.value;
+    setOfferFilter(value);
+    setFilters({ ...filters, offer: value === "any" ? "any" : value });
+  };
 
-  const handleSetOffer = useCallback(
-    async () => {
-      const selectedId = getSingleSelectedId(selectionModel);
-      if (!selectedId) {
-        showSnack("Debes seleccionar exactamente 1 producto.", "warning");
-        return;
-      }
-      const percentNum = offerForm.percent === "" ? NaN : Number(offerForm.percent);
-      if (Number.isNaN(percentNum)) {
-        showSnack("El porcentaje es requerido y debe ser numérico.", "warning");
-        return;
-      }
-      if (percentNum < 0 || percentNum > 100) {
-        showSnack("El porcentaje debe estar entre 0 y 100.", "warning");
-        return;
-      }
-      if (!dayjs(offerForm.startsAt).isValid() || !dayjs(offerForm.endsAt).isValid()) {
-        showSnack("Las fechas deben ser válidas (ISO 8601).", "warning");
-        return;
-      }
-      const payload = {
-        percent: Math.round(percentNum * 100) / 100,
-        startsAt: toStartOfDayISO(offerForm.startsAt),
-        endsAt: toEndOfDayISO(offerForm.endsAt),
-      };
-      if (!dayjs(payload.endsAt).isAfter(payload.startsAt)) {
-        showSnack("La fecha de fin debe ser posterior a la de inicio.", "warning");
-        return;
-      }
-      setIsSubmittingOffer(true);
-      try {
-        await setProductOffer({ productId: selectedId, offer: payload });
-        handleCloseOfferDialog();
-        await fetchItems();
-        showSnack("Oferta aplicada", "success");
-      } catch (e) {
-        showSnack(e?.message || "Error inesperado al aplicar la oferta.", "error");
-      } finally {
-        setIsSubmittingOffer(false);
-      }
-    },
-    [selectionModel, offerForm, fetchItems, showSnack, handleCloseOfferDialog]
+  const handleOpenOfferDialog = useCallback(() => setOfferDialogOpen(true), []);
+  const handleCloseOfferDialog = useCallback(
+    () => setOfferDialogOpen(false),
+    []
   );
+
+  const handleSetOffer = useCallback(async () => {
+    const selectedId = getSingleSelectedId(selectionModel);
+    if (!selectedId) {
+      showSnack("Debes seleccionar exactamente 1 producto.", "warning");
+      return;
+    }
+    const percentNum =
+      offerForm.percent === "" ? NaN : Number(offerForm.percent);
+    if (Number.isNaN(percentNum)) {
+      showSnack("El porcentaje es requerido y debe ser numérico.", "warning");
+      return;
+    }
+    if (percentNum < 0 || percentNum > 100) {
+      showSnack("El porcentaje debe estar entre 0 y 100.", "warning");
+      return;
+    }
+    if (
+      !dayjs(offerForm.startsAt).isValid() ||
+      !dayjs(offerForm.endsAt).isValid()
+    ) {
+      showSnack("Las fechas deben ser válidas (ISO 8601).", "warning");
+      return;
+    }
+    const payload = {
+      percent: Math.round(percentNum * 100) / 100,
+      startsAt: toStartOfDayISO(offerForm.startsAt),
+      endsAt: toEndOfDayISO(offerForm.endsAt),
+    };
+    if (!dayjs(payload.endsAt).isAfter(payload.startsAt)) {
+      showSnack(
+        "La fecha de fin debe ser posterior a la de inicio.",
+        "warning"
+      );
+      return;
+    }
+    setIsSubmittingOffer(true);
+    try {
+      await setProductOffer({ productId: selectedId, offer: payload });
+      handleCloseOfferDialog();
+      await fetchItems();
+      showSnack("Oferta aplicada", "success");
+    } catch (e) {
+      showSnack(
+        e?.message || "Error inesperado al aplicar la oferta.",
+        "error"
+      );
+    } finally {
+      setIsSubmittingOffer(false);
+    }
+  }, [
+    selectionModel,
+    offerForm,
+    fetchItems,
+    showSnack,
+    handleCloseOfferDialog,
+  ]);
 
   const ToolbarButtons = () => (
     <Box
@@ -292,13 +302,21 @@ export function GenericCRUDPage({
         justifyContent: "space-between",
       }}
     >
-      <Dialog open={isRestPwdDialogOpen} onClose={() => setRestPwdDialogOpen(false)}>
+      <Dialog
+        open={isRestPwdDialogOpen}
+        onClose={() => setRestPwdDialogOpen(false)}
+      >
         <DialogTitle>{"Restaurar contraseña"}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {selectedRowName
-              ? <>Vas a restaurar la contraseña de <strong>{selectedRowName}</strong>.</>
-              : "Al hacer click en confirmar, el cliente volverá a tener como contraseña el \"identiftri\" inicial."}
+            {selectedRowName ? (
+              <>
+                Vas a restaurar la contraseña de{" "}
+                <strong>{selectedRowName}</strong>.
+              </>
+            ) : (
+              'Al hacer click en confirmar, el cliente volverá a tener como contraseña el "identiftri" inicial.'
+            )}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -309,17 +327,27 @@ export function GenericCRUDPage({
         </DialogActions>
       </Dialog>
 
-      <Dialog open={isClearOfferDialogOpen} onClose={() => setClearOfferDialogOpen(false)}>
+      <Dialog
+        open={isClearOfferDialogOpen}
+        onClose={() => setClearOfferDialogOpen(false)}
+      >
         <DialogTitle>{"Eliminar oferta"}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {selectedRowName
-              ? <>Se eliminará la oferta del producto <strong>{selectedRowName}</strong>.</>
-              : "Se eliminará la oferta del producto seleccionado."}
+            {selectedRowName ? (
+              <>
+                Se eliminará la oferta del producto{" "}
+                <strong>{selectedRowName}</strong>.
+              </>
+            ) : (
+              "Se eliminará la oferta del producto seleccionado."
+            )}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setClearOfferDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={() => setClearOfferDialogOpen(false)}>
+            Cancelar
+          </Button>
           <Button onClick={handleDeleteOffer} autoFocus>
             Confirmar
           </Button>
@@ -338,7 +366,10 @@ export function GenericCRUDPage({
           </IconButton>
         </Tooltip>
         <Tooltip title="Cancelar" arrow>
-          <IconButton onClick={handleDataGridCancelChanges} disabled={!hasChanges}>
+          <IconButton
+            onClick={handleDataGridCancelChanges}
+            disabled={!hasChanges}
+          >
             <Cancel />
           </IconButton>
         </Tooltip>
@@ -384,8 +415,8 @@ export function GenericCRUDPage({
             <FormControl sx={{ minWidth: 200 }} size="small">
               <InputLabel>Filtrar ofertas:</InputLabel>
               <Select
-                value={hasOfferActive}
-                onChange={handleOfferActiveChange}
+                value={hasOfferFilter}
+                onChange={handleOfferFilterChange}
                 label="Filtrar ofertas:"
               >
                 <MenuItem value={"any"}>Cualquiera</MenuItem>
@@ -433,7 +464,7 @@ export function GenericCRUDPage({
       <Box sx={containerSx}>
         <ToolbarButtons />
         <GenericDataGrid
-          data={filteredAndMergedData}
+          data={mergedAllData}
           columns={columns}
           loading={loading}
           error={error}
@@ -477,9 +508,13 @@ export function GenericCRUDPage({
           <DialogTitle>Establecer oferta</DialogTitle>
           <DialogContent>
             <Typography color="textSecondary">
-              {selectedRowName
-                ? <>Aplicando oferta a <strong>{selectedRowName}</strong>:</>
-                : "Determine el período de vigencia y porcentaje de la oferta:"}
+              {selectedRowName ? (
+                <>
+                  Aplicando oferta a <strong>{selectedRowName}</strong>:
+                </>
+              ) : (
+                "Determine el período de vigencia y porcentaje de la oferta:"
+              )}
             </Typography>
             <Stack direction={"row"} spacing={2} sx={{ mt: 3 }}>
               <DatePicker

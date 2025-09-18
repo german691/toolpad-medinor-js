@@ -4,7 +4,7 @@ import { ClientsProvider } from "../hooks/context/clientWrapper";
 import { bulkUpdateClients, createNewClient } from "../services/clientService";
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import { formatDate } from "../func/formatDate";
 
 const clientColumns = [
@@ -35,7 +35,7 @@ const clientColumns = [
   {
     accessor: "level",
     header: "Nivel",
-    minWidth: 150,
+    minWidth: 80,
     editable: true,
   },
   {
