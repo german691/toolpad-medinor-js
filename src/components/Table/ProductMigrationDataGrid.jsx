@@ -18,12 +18,17 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { DataGrid } from "@mui/x-data-grid";
 import { useProductMigrationContext } from "../../hooks/context/productMigrationProvider";
+import { esES } from "@mui/x-data-grid/locales";
 
 const mainColumns = [
   { field: "code", headerName: "Cód. Producto" },
   { field: "desc", headerName: "Descripción", flex: 1 },
   { field: "lab", headerName: "Laboratorio" },
   { field: "category", headerName: "Categoría" },
+  {
+    field: "level",
+    headerName: "Nivel",
+  },
   {
     field: "iva",
     headerName: "IVA",
@@ -69,6 +74,12 @@ const errorColumns = [
     valueGetter: (_value, row) => row.data.lab,
   },
   {
+    field: "level",
+    headerName: "Nivel",
+    width: 120,
+    valueGetter: (_value, row) => row.data.level,
+  },
+  {
     field: "errors",
     headerName: "Motivo del Rechazo",
     flex: 1,
@@ -91,6 +102,11 @@ const conflictColumns = [
   { field: "desc", headerName: "Descripción", width: 250 },
   { field: "lab", headerName: "Laboratorio", width: 200 },
   { field: "category", headerName: "Categoría", width: 200 },
+  {
+    field: "level",
+    headerName: "Level",
+    width: 120,
+  },
   {
     field: "conflictReason",
     headerName: "Motivo del Conflicto",
@@ -161,6 +177,10 @@ export default function ProductMigrationDataGrid() {
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
                   }}
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
               <Divider sx={{ my: 2 }} />
@@ -221,9 +241,11 @@ export default function ProductMigrationDataGrid() {
                 pagination: { paginationModel: { pageSize: 25 } },
               }}
               localeText={{
+                ...esES.components.MuiDataGrid.defaultProps.localeText,
                 noRowsLabel:
                   "No se hallaron nuevos productos en la nómina procesada. Si cree que esto es un error, por favor, verifique la última fecha de subida de los registros con la fecha de creación de la nómina.",
               }}
+              disableColumnFilter={true}
             />
           </Box>
           <Divider sx={{ my: 2 }} />
@@ -296,6 +318,10 @@ export default function ProductMigrationDataGrid() {
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
                   }}
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
             </DialogContent>
@@ -337,6 +363,10 @@ export default function ProductMigrationDataGrid() {
                   initialState={{
                     pagination: { paginationModel: { pageSize: 25 } },
                   }}
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
             </DialogContent>

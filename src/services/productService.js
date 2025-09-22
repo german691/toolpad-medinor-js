@@ -38,8 +38,6 @@ export const getProducts = async ({
       search,
     });
 
-    console.log(response);
-
     return response.data;
   } catch (error) {
     handleServiceError(error);
@@ -64,6 +62,17 @@ export const createNewProduct = async (productData) => {
   }
 };
 
+export const createProductsByCode = async (productData) => {
+  try {
+    const response = await api.post("/products/add-by-code", {
+      codes: productData,
+    });
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
 export const updateProductById = async (id, productData) => {
   try {
     const response = await api.put(`/products/update/${id}`, productData);
@@ -75,8 +84,34 @@ export const updateProductById = async (id, productData) => {
 
 export const bulkUpdateProducts = async (productData) => {
   try {
-    console.log("datos que llegan al servicio de productos", productData);
     const response = await api.put("/products/update", productData);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const setProductOffer = async ({ productId, offer }) => {
+  try {
+    const response = await api.post(`/products/${productId}/offer`, offer);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const deleteProductOffer = async ({ productId }) => {
+  try {
+    const response = await api.delete(`/products/${productId}/offer`);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const checkProductOffer = async ({ productId }) => {
+  try {
+    const response = await api.get(`/products/${productId}/offer`);
     return response;
   } catch (error) {
     handleServiceError(error);

@@ -4,7 +4,8 @@ import { ClientsProvider } from "../hooks/context/clientWrapper";
 import { bulkUpdateClients, createNewClient } from "../services/clientService";
 import { useCRUD } from "../hooks/context/useCRUD";
 import { Alert, AlertTitle, Snackbar } from "@mui/material";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
+import { formatDate } from "../func/formatDate";
 
 const clientColumns = [
   {
@@ -20,6 +21,12 @@ const clientColumns = [
     editable: true,
   },
   {
+    accessor: "nickname",
+    header: "Nombre de pila",
+    minWidth: 180,
+    editable: true,
+  },
+  {
     accessor: "identiftri",
     header: "Identificador Fiscal",
     minWidth: 180,
@@ -32,6 +39,12 @@ const clientColumns = [
     editable: true,
   },
   {
+    accessor: "level",
+    header: "Nivel",
+    minWidth: 80,
+    editable: true,
+  },
+  {
     accessor: "active",
     header: "Activo",
     type: "boolean",
@@ -41,9 +54,9 @@ const clientColumns = [
   },
   {
     accessor: "createdAt",
-    header: "Fecha de Creación",
+    header: "F. Creación",
     width: 180,
-    render: (row) => new Date(row.createdAt).toLocaleDateString(),
+    renderCell: ({ value, row }) => formatDate(value ?? row?.createdAt),
   },
 ];
 
@@ -53,6 +66,10 @@ export function ClientsPage() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [isSnackOpen, setSnackOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState({});
+  const [selectedModel, setSelectedModel] = useState({
+    type: "include",
+    ids: new Set(),
+  });
 
   const handleAddClient = () => {
     setCreateDialogOpen(true);
@@ -67,8 +84,6 @@ export function ClientsPage() {
       });
       fetchItems();
     } catch (error) {
-      console.log(response);
-
       setStatusMessage({
         title: "Ha ocurrido un problema: ",
         message: error.message,
@@ -94,7 +109,6 @@ export function ClientsPage() {
           severity: "warning",
         });
       } else {
-        console.log(response.data.updatedCount, response);
         response.data.updatedCount == 1
           ? setStatusMessage({
               title: "Cliente actualizado con éxito",
@@ -129,6 +143,9 @@ export function ClientsPage() {
         onAdd={handleAddClient}
         onSave={handleSaveChanges}
         onUpdate={handleUpdateClient}
+        selectionModel={selectedModel}
+        onSelectionChange={(newModel) => setSelectedModel(newModel)}
+        isClientPage={true}
       />
       <ClientCreateDialog
         open={isCreateDialogOpen}

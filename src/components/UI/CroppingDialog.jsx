@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -8,47 +8,38 @@ import {
   Grid,
   Paper,
   Typography,
-  Badge,
   Stack,
   Box,
   Divider,
-  ButtonGroup, // Importado para los botones de resolución
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Tooltip,
 } from "@mui/material";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
-// --- FUNCIONES DE AYUDA ---
-
 function centerAspectCrop(mediaWidth, mediaHeight, aspect = 1) {
   return centerCrop(
-    makeAspectCrop({ unit: "%", width: 100 }, aspect, mediaWidth, mediaHeight),
+    makeAspectCrop({ unit: "%", width: 90 }, aspect, mediaWidth, mediaHeight),
     mediaWidth,
     mediaHeight
   );
 }
 
-/**
- * Función getCroppedImg actualizada para manejar el redimensionamiento.
- * @param {HTMLImageElement} image El elemento de la imagen original.
- * @param {import('react-image-crop').PixelCrop} crop El área de recorte en píxeles.
- * @param {number | null} targetWidth El ancho final deseado en píxeles.
- * @returns {Promise<string>} La URL de datos de la imagen final.
- */
-function getCroppedImg(image, crop, targetWidth = null) {
+function getCroppedImg(image, crop) {
   return new Promise((resolve, reject) => {
-    const cropCanvas = document.createElement("canvas");
+    const canvas = document.createElement("canvas");
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    cropCanvas.width = Math.ceil(crop.width * scaleX);
-    cropCanvas.height = Math.ceil(crop.height * scaleY);
-    const ctx = cropCanvas.getContext("2d");
-
+    canvas.width = Math.ceil(crop.width * scaleX);
+    canvas.height = Math.ceil(crop.height * scaleY);
+    const ctx = canvas.getContext("2d");
     if (!ctx) {
       reject(new Error("No se pudo obtener el contexto 2D del canvas."));
       return;
     }
-
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(
       image,
@@ -58,284 +49,309 @@ function getCroppedImg(image, crop, targetWidth = null) {
       crop.height * scaleY,
       0,
       0,
-      cropCanvas.width,
-      cropCanvas.height
+      canvas.width,
+      canvas.height
     );
-
-    if (!targetWidth) {
-      resolve(cropCanvas.toDataURL("image/png"));
-      return;
-    }
-
-    const resizeCanvas = document.createElement("canvas");
-    const cropAspectRatio = cropCanvas.width / cropCanvas.height;
-    resizeCanvas.width = targetWidth;
-    resizeCanvas.height = Math.ceil(targetWidth / cropAspectRatio);
-    const resizeCtx = resizeCanvas.getContext("2d");
-
-    if (!resizeCtx) {
-      reject(
-        new Error(
-          "No se pudo obtener el contexto 2D del canvas de redimensionamiento."
-        )
-      );
-      return;
-    }
-
-    resizeCtx.imageSmoothingQuality = "high";
-    resizeCtx.drawImage(
-      cropCanvas,
-      0,
-      0,
-      resizeCanvas.width,
-      resizeCanvas.height
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("La creación del Blob de la imagen falló."));
+          return;
+        }
+        resolve({
+          blob,
+          dataURL: URL.createObjectURL(blob),
+        });
+      },
+      "image/png",
+      0.95
     );
-
-    resolve(resizeCanvas.toDataURL("image/png"));
   });
 }
-
-// --- COMPONENTE ---
 
 export default function CroppingDialog({
   open,
   onClose,
-  images,
+  images: initialImages,
   onComplete,
-  aspect = 16 / 9,
+  aspect = 1,
+  principalExists = false,
 }) {
   const [localImages, setLocalImages] = useState([]);
   const [activeImageId, setActiveImageId] = useState(null);
-  const [targetResolution, setTargetResolution] = useState(null); // Estado para la resolución
+  const [primaryImageId, setPrimaryImageId] = useState(null);
   const imgRef = useRef(null);
 
   const activeImage = localImages.find((img) => img.id === activeImageId);
-  const allCropped =
-    localImages.length > 0 && localImages.every((img) => img.croppedSrc);
-
-  const RESOLUTIONS = [256, 328, 512, 768, 1024];
 
   useEffect(() => {
-    if (open) {
-      setLocalImages(images);
-      const principalImage = images.find((img) => img.role === "principal");
-      setActiveImageId(
-        principalImage ? principalImage.id : images[0]?.id || null
-      );
-      setTargetResolution(null); // Resetea la resolución al abrir
+    if (open && initialImages.length > 0) {
+      const preparedImages = initialImages.map((img) => ({
+        ...img,
+        crop: undefined,
+        completedCrop: undefined,
+        croppedSrc: null,
+        blob: null,
+      }));
+      setLocalImages(preparedImages);
+      setActiveImageId(preparedImages[0].id);
+
+      if (!principalExists) {
+        setPrimaryImageId(preparedImages[0].id);
+      } else {
+        setPrimaryImageId(null);
+      }
     }
-  }, [open, images]);
+  }, [open, initialImages, principalExists]);
 
-  const handleConfirmCrop = async () => {
+  const onImageLoad = useCallback(
+    (e) => {
+      if (aspect && activeImage) {
+        const { width, height } = e.currentTarget;
+        const initialCrop = centerAspectCrop(width, height, aspect);
+        setLocalImages((prev) =>
+          prev.map((img) =>
+            img.id === activeImageId
+              ? { ...img, crop: initialCrop, completedCrop: initialCrop }
+              : img
+          )
+        );
+      }
+    },
+    [activeImage, aspect, activeImageId]
+  );
+
+  const handleApplyCrop = async () => {
     if (!activeImage?.completedCrop || !imgRef.current) return;
-
-    // Pasa la resolución seleccionada a la función de recorte
-    const croppedSrc = await getCroppedImg(
-      imgRef.current,
-      activeImage.completedCrop,
-      targetResolution
-    );
-
-    const updatedImages = localImages.map((img) =>
-      img.id === activeImageId ? { ...img, croppedSrc } : img
-    );
-    setLocalImages(updatedImages);
-    const currentIndex = updatedImages.findIndex(
-      (img) => img.id === activeImageId
-    );
-    const nextImage = updatedImages.find(
-      (img, index) => index > currentIndex && !img.croppedSrc
-    );
-    setActiveImageId(nextImage ? nextImage.id : null);
-    setTargetResolution(null); // Resetea para la siguiente imagen
-  };
-
-  // El resto de los handlers y la lógica permanecen sin cambios
-  function onImageLoad(e) {
-    if (aspect && activeImage) {
-      const { width, height } = e.currentTarget;
-      const initialCrop = centerAspectCrop(width, height, aspect);
-      setLocalImages((prevImages) =>
-        prevImages.map((img) =>
-          img.id === activeImageId ? { ...img, crop: initialCrop } : img
+    try {
+      const { blob, dataURL } = await getCroppedImg(
+        imgRef.current,
+        activeImage.completedCrop
+      );
+      setLocalImages((prev) =>
+        prev.map((img) =>
+          img.id === activeImageId
+            ? { ...img, croppedSrc: dataURL, blob: blob }
+            : img
         )
       );
+
+      const currentIndex = localImages.findIndex(
+        (img) => img.id === activeImageId
+      );
+      const nextUncroppedImage = localImages.find(
+        (img, index) => index > currentIndex && !img.croppedSrc
+      );
+      if (nextUncroppedImage) {
+        setActiveImageId(nextUncroppedImage.id);
+      }
+    } catch (e) {
+      console.error("Error al recortar la imagen:", e);
     }
-  }
-
-  const handleCropChange = (newCrop) => {
-    setLocalImages((prevImages) =>
-      prevImages.map((img) =>
-        img.id === activeImageId ? { ...img, crop: newCrop } : img
-      )
-    );
-  };
-
-  const handleCompletedCrop = (newCompletedCrop) => {
-    setLocalImages((prevImages) =>
-      prevImages.map((img) =>
-        img.id === activeImageId
-          ? { ...img, completedCrop: newCompletedCrop }
-          : img
-      )
-    );
   };
 
   const handleFinish = () => {
-    onComplete(localImages);
+    const processedImages = localImages.map((img) => {
+      const role =
+        primaryImageId && img.id === primaryImageId
+          ? "principal"
+          : "secundaria";
+      return {
+        ...img,
+        role,
+      };
+    });
+    onComplete(processedImages);
     onClose();
   };
 
+  const allImagesCropped = localImages.every((img) => !!img.croppedSrc);
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth={false}>
-      <DialogTitle>Recortar Imágenes</DialogTitle>
+      <DialogTitle>Editar y Preparar Imágenes</DialogTitle>
       <DialogContent dividers>
-        {activeImage ? (
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
-              <Stack spacing={2}>
-                {/* Contenedor de la imagen con tus estilos originales */}
-                <Box
-                  sx={{
-                    width: "400px",
-                    maxWidth: "400px",
-                    height: "500px",
-                    maxHeight: "500px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <ReactCrop
-                    crop={activeImage.crop}
-                    onChange={handleCropChange}
-                    onComplete={handleCompletedCrop}
-                    aspect={aspect}
-                  >
-                    <img
-                      ref={imgRef}
-                      src={activeImage.originalSrc}
-                      onLoad={onImageLoad}
-                      style={{
-                        width: "100%",
-                        maxHeight: "500px",
-                      }}
-                      alt="Para recortar"
-                    />
-                  </ReactCrop>
-                </Box>
+        <Grid container spacing={3}>
+          {/* Panel de Recorte (Izquierda) */}
 
-                {/* --- INICIO: SECCIÓN DE RESOLUCIONES AÑADIDA --- */}
-                <Paper variant="outlined" sx={{ p: 2, width: "400px" }}>
-                  <Typography gutterBottom sx={{ fontWeight: 500 }}>
-                    Resolución Final (Opcional)
-                  </Typography>
-                  <ButtonGroup fullWidth size="small">
-                    {RESOLUTIONS.map((res) => (
-                      <Button
-                        key={res}
-                        variant={
-                          targetResolution === res ? "contained" : "outlined"
-                        }
-                        onClick={() => setTargetResolution(res)}
-                      >
-                        {res}px
-                      </Button>
-                    ))}
-                  </ButtonGroup>
-                </Paper>
-                {/* --- FIN: SECCIÓN DE RESOLUCIONES AÑADIDA --- */}
-              </Stack>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              {/* La cola de recorte permanece exactamente igual */}
-              <Paper variant="outlined" sx={{ height: "100%" }}>
-                <Typography sx={{ p: 2, fontWeight: 500 }}>
-                  Cola de Recorte
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Stack spacing={2} sx={{ px: 2 }}>
-                  {localImages.map((img) => (
-                    <Paper
-                      key={img.id}
-                      onClick={() =>
-                        !img.croppedSrc && setActiveImageId(img.id)
-                      }
-                      sx={{
-                        p: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: img.croppedSrc ? "default" : "pointer",
-                        outline: `${activeImageId === img.id ? "2px" : "1px"} solid ${activeImageId === img.id ? "#1976d2" : "rgba(0, 0, 0, 0.0)"}`,
-                        outlineOffset: "-1px",
-                        opacity: img.croppedSrc ? 0.6 : 1,
-                      }}
-                      variant="outlined"
-                    >
-                      <Badge
-                        color="success"
-                        variant="dot"
-                        invisible={!img.croppedSrc}
-                        sx={{ mr: 2 }}
-                      >
-                        <img
-                          src={img.originalSrc}
-                          alt="thumbnail"
-                          width={60}
-                          height={60}
-                          style={{ objectFit: "cover", borderRadius: "4px" }}
-                        />
-                      </Badge>
-                      <Typography sx={{ flexGrow: 1, fontSize: ".8rem" }}>
-                        {img.file.name}
-                      </Typography>
-                      {img.croppedSrc && <CheckCircleIcon color="success" />}
-                    </Paper>
-                  ))}
-                </Stack>
-              </Paper>
-            </Grid>
+          <Grid item xs={12} md={8}>
+            <Box
+              sx={{
+                width: "600px",
+                height: "600px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "grey.100",
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              {activeImage ? (
+                <ReactCrop
+                  crop={activeImage.crop}
+                  onChange={(_, percentCrop) =>
+                    setLocalImages((prev) =>
+                      prev.map((img) =>
+                        img.id === activeImageId
+                          ? { ...img, crop: percentCrop }
+                          : img
+                      )
+                    )
+                  }
+                  onComplete={(c) =>
+                    setLocalImages((prev) =>
+                      prev.map((img) =>
+                        img.id === activeImageId
+                          ? { ...img, completedCrop: c }
+                          : img
+                      )
+                    )
+                  }
+                  aspect={aspect}
+                >
+                  <img
+                    ref={imgRef}
+                    src={activeImage.originalSrc}
+                    onLoad={onImageLoad}
+                    style={{ maxHeight: "600px" }}
+                    alt="Recorte"
+                  />
+                </ReactCrop>
+              ) : (
+                <Typography>Seleccione una imagen para editar.</Typography>
+              )}
+            </Box>
           </Grid>
-        ) : (
-          // El resto del componente permanece igual
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              minHeight: "300px",
-              width: "600px",
-            }}
-          >
-            <CheckCircleIcon color="success" sx={{ fontSize: 80 }} />
-            <Typography variant="h4" mt={4}>
-              ¡Recorte Completado!
-            </Typography>
-            <Typography mt={1}>
-              Todas las imágenes han sido procesadas.
-            </Typography>
-          </Box>
-        )}
+
+          {/* Panel de Imágenes (Derecha) */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              variant="outlined"
+              sx={{ height: "600px", display: "flex", flexDirection: "column" }}
+            >
+              <Box sx={{ p: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  Imágenes a Subir
+                </Typography>
+                {principalExists && (
+                  <Typography variant="caption" color="text.secondary">
+                    Ya existe una imagen principal. Todas las nuevas serán
+                    secundarias.
+                  </Typography>
+                )}
+              </Box>
+              <Divider />
+              <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
+                <RadioGroup
+                  value={primaryImageId}
+                  onChange={(e) => setPrimaryImageId(e.target.value)}
+                >
+                  <Stack spacing={1.5}>
+                    {localImages.map((img) => (
+                      <Paper
+                        key={img.id}
+                        onClick={() => setActiveImageId(img.id)}
+                        variant="outlined"
+                        sx={{
+                          p: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          borderColor:
+                            activeImageId === img.id
+                              ? "primary.main"
+                              : "rgba(0,0,0,0.12)",
+                          boxShadow:
+                            activeImageId === img.id
+                              ? (theme) =>
+                                  `0 0 0 2px ${theme.palette.primary.main}`
+                              : "none",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: "relative",
+                            width: 60,
+                            height: 60,
+                            flexShrink: 0,
+                            mr: 1.5,
+                          }}
+                        >
+                          <img
+                            src={img.originalSrc}
+                            alt={img.file.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: "4px",
+                            }}
+                          />
+                          {img.croppedSrc && (
+                            <CheckCircleIcon
+                              color="success"
+                              sx={{
+                                position: "absolute",
+                                top: -5,
+                                right: -5,
+                                bgcolor: "white",
+                                borderRadius: "50%",
+                              }}
+                            />
+                          )}
+                        </Box>
+                        <Typography
+                          noWrap
+                          sx={{ flexGrow: 1, fontSize: ".8rem" }}
+                        >
+                          {img.file.name}
+                        </Typography>
+                        <Tooltip
+                          title={
+                            principalExists
+                              ? "Ya existe una imagen principal"
+                              : "Marcar como imagen principal"
+                          }
+                        >
+                          <span>
+                            <FormControlLabel
+                              value={img.id}
+                              control={<Radio />}
+                              label=""
+                              labelPlacement="start"
+                              onClick={(e) => e.stopPropagation()}
+                              disabled={principalExists}
+                            />
+                          </span>
+                        </Tooltip>
+                      </Paper>
+                    ))}
+                  </Stack>
+                </RadioGroup>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>
-          {activeImage ? "Cancelar" : "Finalizar"}
+      <DialogActions sx={{ p: "16px 24px" }}>
+        <Button onClick={onClose} color="inherit">
+          Cancelar
         </Button>
-        {activeImage && (
-          <Button
-            variant="contained"
-            onClick={handleConfirmCrop}
-            disabled={!activeImage.completedCrop}
-          >
-            Siguiente
-          </Button>
-        )}
-        {allCropped && (
-          <Button variant="contained" color="success" onClick={handleFinish}>
-            Finalizar
-          </Button>
-        )}
+        <Button
+          variant="outlined"
+          onClick={handleApplyCrop}
+          disabled={!activeImage?.completedCrop || !!activeImage?.croppedSrc}
+        >
+          {activeImage?.croppedSrc ? "Recorte Guardado" : "Guardar Recorte"}
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleFinish}
+          disabled={!allImagesCropped}
+        >
+          Finalizar
+        </Button>
       </DialogActions>
     </Dialog>
   );

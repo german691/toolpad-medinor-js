@@ -18,11 +18,13 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { DataGrid } from "@mui/x-data-grid";
 import { useClientMigrationContext } from "../../hooks/context/clientMigrationProvider.jsx";
+import { esES } from "@mui/x-data-grid/locales";
 
 const mainColumns = [
   { field: "COD_CLIENT", headerName: "Cód. Cliente", width: 150 },
   { field: "RAZON_SOCI", headerName: "Razón Social", flex: 1, minWidth: 250 },
   { field: "IDENTIFTRI", headerName: "Identificador Fiscal", width: 200 },
+  { field: "USERNAME_ASSIGNED", headerName: "Usuario Asignado", width: 220 },
 ];
 
 const errorColumns = [
@@ -126,6 +128,10 @@ export default function ClientMigrationDataGrid() {
                   columns={mainColumns}
                   getRowId={(row) => `${row.COD_CLIENT}-${row.IDENTIFTRI}`}
                   autoPageSize
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
               <Divider sx={{ my: 2 }} />
@@ -172,9 +178,11 @@ export default function ClientMigrationDataGrid() {
               getRowId={(row) => `${row.COD_CLIENT}-${row.IDENTIFTRI}`}
               autoPageSize
               localeText={{
+                ...esES.components.MuiDataGrid.defaultProps.localeText,
                 noRowsLabel:
                   "No se hallaron nuevos clientes en la nómina procesada. Si cree que esto es un error, por favor, verifique la última fecha de subida de los registros con la fecha de creación de la nómina.",
               }}
+              disableColumnFilter={true}
             />
           </Box>
           <Divider sx={{ my: 2 }} />
@@ -244,6 +252,10 @@ export default function ClientMigrationDataGrid() {
                   columns={errorColumns}
                   getRowId={(row) => row.id}
                   autoPageSize
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
             </DialogContent>
@@ -282,6 +294,10 @@ export default function ClientMigrationDataGrid() {
                   columns={conflictColumns}
                   getRowId={(row) => row.id}
                   autoPageSize
+                  localeText={
+                    esES.components.MuiDataGrid.defaultProps.localeText
+                  }
+                  disableColumnFilter={true}
                 />
               </Box>
             </DialogContent>

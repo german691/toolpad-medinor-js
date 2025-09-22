@@ -72,8 +72,18 @@ export const updateClientById = async (id, clientData) => {
 
 export const bulkUpdateClients = async (clientData) => {
   try {
-    console.log("datos impresos desde services a clientes: ", clientData);
     const response = await api.put("/clients/update", clientData);
+    return response;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const restoreClientPassword = async (clientData) => {
+  try {
+    const response = await api.post("/clients/restore-password", {
+      id: clientData,
+    });
     return response;
   } catch (error) {
     handleServiceError(error);

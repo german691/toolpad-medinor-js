@@ -5,12 +5,16 @@ import {
   createNewProduct,
 } from "../services/productService";
 import { useCRUD } from "../hooks/context/useCRUD";
-import { Alert, AlertTitle, Snackbar } from "@mui/material";
+import { Alert, AlertTitle, Chip, Snackbar, Stack, Tooltip, Typography } from "@mui/material";
 import { ProductsProvider } from "../hooks/context/productWrapper";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 import getLabs from "../services/labService";
 import getCategories from "../services/categoryService";
 import ItemSelect from "../components/Select/ItemSelect";
+import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
+import dayjs from "dayjs";
+import { ClearRounded, LocalOffer } from "@mui/icons-material";
+import { Box } from "@mui/system";
+import { formatDate } from "../func/formatDate";
 
 export function ProductsPage() {
   const { fetchItems } = useCRUD();
@@ -20,6 +24,10 @@ export function ProductsPage() {
   const [statusMessage, setStatusMessage] = useState({});
   const [labs, setLabs] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedModel, setSelectedModel] = useState({
+    type: "include",
+    ids: new Set(),
+  });
 
   useEffect(() => {
     const fetchLabs = async () => {
@@ -48,7 +56,6 @@ export function ProductsPage() {
           key: catObj.category,
         }));
 
-        console.log("formatted", formattedCats);
         setCategories(formattedCats);
       } catch (error) {
         console.error("Error al cargar las categorías:", error);
@@ -81,8 +88,9 @@ export function ProductsPage() {
         accessor: "lab",
         header: "Laboratorio",
         minWidth: 100,
+        type: "singleSelect",
+        valueOptions: labs,
         editable: true,
-        type: "string",
         renderEditCell: (params) => <ItemSelect {...params} options={labs} />,
         render: (params) => {
           const selectedOption = labs.find((opt) => opt.value === params.value);
@@ -93,8 +101,9 @@ export function ProductsPage() {
         accessor: "category",
         header: "Categorías",
         minWidth: 135,
+        type: "singleSelect",
+        valueOptions: categories,
         editable: true,
-        type: "string",
         renderEditCell: (params) => (
           <ItemSelect {...params} options={categories} />
         ),
@@ -124,10 +133,16 @@ export function ProductsPage() {
         editable: true,
       },
       {
-        accessor: "discount",
-        header: "Descuento",
-        minWidth: 100,
+        accessor: "level",
+        header: "Nivel",
+        minWidth: 80,
+        editable: true,
       },
+      // {
+      //   accessor: "discount",
+      //   header: "Descuento",
+      //   minWidth: 100,
+      // },
       {
         accessor: "iva",
         header: "IVA",
@@ -145,11 +160,48 @@ export function ProductsPage() {
         editable: true,
       },
       {
+      accessor: "offer",
+      header: "Oferta",
+      minWidth: 100,
+      align: "center",
+      sortable: false,
+      filterable: false,
+      renderCell: ({ value }) => {
+        const o = value;
+        if (o && o.percent != null && o.startsAt && o.endsAt) {
+          const s = dayjs(o.startsAt);
+          const e = dayjs(o.endsAt);
+          return (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "center", height: "100%" }}>
+              <Tooltip title={`${s.format("DD/MM/YYYY")} - ${e.format("DD/MM/YYYY")}`}>
+                <Chip
+                  size="small"
+                  icon={<LocalOffer fontSize="small" />}
+                  label={`${o.percent}%`}
+                  variant="outlined"
+                  color="success"
+                  sx={{px: 1}}
+                />
+                {/* <Typography variant="body2">{`${s.format("DD/MM")} - ${e.format("DD/MM")}`}</Typography> */}
+              </Tooltip>
+            </Stack>
+          );
+        }
+        return (
+          <Box sx={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "center", height: "100%" }}>
+            <Tooltip title={"Sin ofertas"}>
+              <ClearRounded color="disabled" fontSize="small" />
+            </Tooltip>
+          </Box>
+        );
+      }
+    },
+      {
         accessor: "createdAt",
         header: "F. Creación",
         width: 100,
-        render: (row) => new Date(row.createdAt).toLocaleDateString(),
-      },
+        renderCell: ({ value, row }) => formatDate(value ?? row?.createdAt),
+      }
     ],
     [labs]
   );
@@ -160,7 +212,6 @@ export function ProductsPage() {
 
   const handleSaveProduct = async (productData) => {
     let response = null;
-    console.log("lo que llega a la pag", productData);
     try {
       response = await createNewProduct(productData);
       setStatusMessage({
@@ -168,8 +219,6 @@ export function ProductsPage() {
       });
       fetchItems();
     } catch (error) {
-      console.log(response);
-
       setStatusMessage({
         title: "Ha ocurrido un problema: ",
         message: error.message,
@@ -195,7 +244,6 @@ export function ProductsPage() {
           severity: "warning",
         });
       } else {
-        console.log(response.data.updatedCount, response);
         response.data.updatedCount === 1
           ? setStatusMessage({
               title: "Producto actualizado con éxito",
@@ -230,6 +278,9 @@ export function ProductsPage() {
         onAdd={handleAddProduct}
         onSave={handleSaveChanges}
         onUpdate={handleUpdateClient}
+        selectionModel={selectedModel}
+        onSelectionChange={(newModel) => setSelectedModel(newModel)}
+        isProductPage={true}
       />
       <ProductCreateDialog
         open={isCreateDialogOpen}

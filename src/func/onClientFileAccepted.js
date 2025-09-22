@@ -9,11 +9,14 @@ export const validateAndCleanData = (json) => {
   const headers = Object.keys(json[0]);
 
   const findHeader = (headerName) =>
-    headers.find((h) => h.toUpperCase() === headerName.toUpperCase());
+    headers.find(
+      (h) => h?.toString().toUpperCase() === headerName.toUpperCase()
+    );
 
   const codClientHeader = findHeader("COD_CLIENT");
   const razonSociHeader = findHeader("RAZON_SOCI");
   const identiftriHeader = findHeader("IDENTIFTRI");
+  const levelHeader = findHeader("LEVEL");
 
   if (!codClientHeader || !razonSociHeader || !identiftriHeader) {
     const missing = [];
@@ -25,6 +28,22 @@ export const validateAndCleanData = (json) => {
     );
   }
 
+  const isNilOrEmpty = (v) =>
+    v === undefined || v === null || (typeof v === "string" && v.trim() === "");
+
+  const parseLevelIfNumeric = (raw) => {
+    if (isNilOrEmpty(raw)) return undefined;
+
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+      return Math.trunc(raw);
+    }
+    if (typeof raw === "string") {
+      const s = raw.trim();
+      if (/^\d+$/.test(s)) return Math.trunc(Number(s));
+    }
+    return undefined;
+  };
+
   const seenCodClients = new Set();
   const cleanedData = [];
 
@@ -32,23 +51,28 @@ export const validateAndCleanData = (json) => {
     const codClient = row[codClientHeader];
     const identiftri = row[identiftriHeader];
     const razonSoci = row[razonSociHeader];
+    const levelRaw = levelHeader ? row[levelHeader] : undefined;
 
-    if (!codClient || !identiftri) {
-      continue;
-    }
+    if (!codClient || !identiftri) continue;
 
     const codClientStr = String(codClient).trim();
-    if (seenCodClients.has(codClientStr)) {
-      continue;
-    }
-
+    if (seenCodClients.has(codClientStr)) continue;
     seenCodClients.add(codClientStr);
 
-    cleanedData.push({
+    const out = {
       COD_CLIENT: codClientStr,
-      RAZON_SOCI: String(razonSoci),
-      IDENTIFTRI: identiftri,
-    });
+      RAZON_SOCI: String(razonSoci ?? "")
+        .trim()
+        .toUpperCase(),
+      IDENTIFTRI: String(identiftri).trim(),
+    };
+
+    const parsedLevel = parseLevelIfNumeric(levelRaw);
+    if (parsedLevel !== undefined) {
+      out.LEVEL = parsedLevel;
+    }
+
+    cleanedData.push(out);
   }
 
   if (cleanedData.length === 0) {

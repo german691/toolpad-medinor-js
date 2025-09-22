@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useCRUD } from "../hooks/context/useCRUD";
-import getCategories from "../services/categoryService";
-import { GenericCRUDPage } from "../components/Screen/GenericCRUDPAge";
 import { ProductsProvider } from "../hooks/context/productWrapper";
 import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
@@ -9,27 +7,40 @@ import {
   Box,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Tooltip,
 } from "@mui/material";
 import Searchbox from "../components/UI/Searchbox";
-import {
-  Add,
-  AddPhotoAlternate,
-  AddToPhotos,
-  HideImage,
-  Image,
-  ImageNotSupported,
-  Refresh,
-} from "@mui/icons-material";
-import ImageDropzone from "../components/UI/MultiImageManager";
+import { AddPhotoAlternate, Refresh } from "@mui/icons-material";
 import MultiImageManager from "../components/UI/MultiImageManager";
+import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
+import {
+  clearProductImages,
+  deleteProductImage,
+  getProductImages,
+  uploadImages,
+} from "../services/imageService";
+import UploadByCodeDialog from "../components/Dialog/UploadByCodeDialog";
+import { esES } from "@mui/x-data-grid/locales";
 
 export default function ProductsImageWrapper() {
   return (
-    <ProductsProvider>
+    <ProductsProvider
+      initialFilters={{
+        categoryName: { $nin: ["ESTUCHADOS", "HOSPITALARIOS"] },
+      }}
+    >
       <ImagesPage />
     </ProductsProvider>
   );
@@ -46,50 +57,189 @@ export function ImagesPage() {
     setLimit,
     setSort,
     setSearch,
+    filters,
+    setFilters,
+    fetchItems,
   } = useCRUD();
 
-  const handleRefresh = useCallback(() => {
-    setSearch("");
-  }, [setSearch]);
+  const mappedItems = useMemo(() => {
+    return (items || []).map((prod) => ({
+      ...prod,
+      image: Boolean(prod.mainImage) || prod.secondaryImages?.length > 0,
+    }));
+  }, [items]);
 
-  const [labs, setLabs] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [filterModel, setFilterModel] = useState({ items: [] });
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [hasImageFilter, setImageFilter] = useState("any");
+  const [isUploadByCodeDialogOpen, setIsUploadByCodeDialogOpen] =
+    useState(false);
+
+  const handleImageFilterChange = (event) => {
+    const value = event.target.value;
+    setImageFilter(value);
+    setFilters({ ...filters, images: value === "any" ? "any" : value });
+  };
+
+  const hasPrincipalImage = useMemo(() => {
+    const existingHasMain = existingImages.some((img) => img.isMain);
+    const newHasMain = newImages.some((img) => img.role === "principal");
+    return existingHasMain || newHasMain;
+  }, [existingImages, newImages]);
+
+  const [notification, setNotification] = useState({
+    open: false,
+    title: "",
+    message: "",
+  });
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
-    const fetchLabs = async () => {
+    if (!selectedProduct) {
+      setExistingImages([]);
+      setNewImages([]);
+      return;
+    }
+
+    const fetchImages = async () => {
+      setImagesLoading(true);
+      setNewImages([]);
       try {
-        const response = await getLabs();
-        const formattedLabs = response.data.items.map((labObj) => ({
-          value: labObj.lab,
-          label: labObj.lab,
-          key: labObj.lab,
-        }));
-        setLabs(formattedLabs);
+        const images = await getProductImages(selectedProduct._id);
+        setExistingImages(images);
       } catch (error) {
-        console.error("Error al cargar los laboratorios:", error);
+        console.error(error.message || "Error al cargar imágenes");
+        setExistingImages([]);
+        setNotification({
+          open: true,
+          title: "Error",
+          message: "No se pudieron cargar las imágenes del producto.",
+        });
+      } finally {
+        setImagesLoading(false);
       }
     };
-    fetchLabs();
-  }, []);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getCategories();
-        const formattedCats = response.data.items.map((catObj) => ({
-          value: catObj.category,
-          label: catObj.category,
-          key: catObj.category,
-        }));
+    fetchImages();
+  }, [selectedProduct]);
 
-        console.log("formatted", formattedCats);
-        setCategories(formattedCats);
-      } catch (error) {
-        console.error("Error al cargar las categorías:", error);
-      }
-    };
-    fetchCategories();
-  }, []);
+  const handleRowClick = (params) => {
+    if (selectedProduct?._id === params.row._id) {
+      setSelectedProduct(null);
+    } else {
+      setSelectedProduct(params.row);
+    }
+  };
+
+  const handleNewImages = (processedImages) => {
+    setNewImages((prev) => [...prev, ...processedImages]);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedProduct || newImages.length === 0) return;
+    setUploading(true);
+    try {
+      await uploadImages(selectedProduct._id, newImages);
+      setNewImages([]);
+      const updatedImages = await getProductImages(selectedProduct._id);
+      setExistingImages(updatedImages);
+      setNotification({
+        open: true,
+        title: "Éxito",
+        message: "¡Imágenes subidas correctamente!",
+      });
+    } catch (error) {
+      console.error(error);
+      setNotification({
+        open: true,
+        title: "Error de Subida",
+        message: error.message || "Hubo un problema al subir las imágenes.",
+      });
+    } finally {
+      setUploading(false);
+      fetchItems();
+    }
+  };
+
+  const handleDeleteExisting = (imageId) => {
+    if (!selectedProduct) return;
+
+    const imageToDelete = existingImages.find((img) => img._id === imageId);
+    console.log({
+      selected: selectedProduct,
+      selected_id: selectedProduct._id,
+      imageId: imageId,
+    });
+
+    setConfirmDialog({
+      open: true,
+      title: "Confirmar Eliminación",
+      message: `¿Está seguro de que desea eliminar esta imagen ${imageToDelete?.isMain ? "PRINCIPAL" : ""}?`,
+      onConfirm: async () => {
+        handleCloseConfirm();
+        try {
+          await deleteProductImage(selectedProduct._id, imageId);
+          const updatedImages = await getProductImages(selectedProduct._id);
+          setExistingImages(updatedImages);
+
+          await fetchItems();
+        } catch (err) {
+          console.error("Error al borrar la imagen", err);
+          setNotification({
+            open: true,
+            title: "Error",
+            message: "No se pudo borrar la imagen.",
+          });
+        }
+      },
+    });
+  };
+
+  const handleDeleteNew = (imageId) => {
+    setNewImages((prev) => prev.filter((img) => img.id !== imageId));
+  };
+
+  const handleClearAllImages = () => {
+    if (!selectedProduct) return;
+    setConfirmDialog({
+      open: true,
+      title: "¡Atención!",
+      message: `¿Desea eliminar TODAS las imágenes de ${selectedProduct.desc}? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        handleCloseConfirm();
+        try {
+          await clearProductImages(selectedProduct._id);
+          setExistingImages([]);
+          setNotification({
+            open: true,
+            title: "Éxito",
+            message: "Todas las imágenes fueron eliminadas.",
+          });
+        } catch (err) {
+          console.error("Error al borrar todas las imágenes", err);
+          setNotification({
+            open: true,
+            title: "Error",
+            message: "No se pudieron eliminar las imágenes.",
+          });
+        }
+      },
+    });
+  };
+
+  const handleCloseNotification = () =>
+    setNotification({ ...notification, open: false });
+  const handleCloseConfirm = () =>
+    setConfirmDialog({ ...confirmDialog, open: false });
 
   const productColumns = useMemo(
     () => [
@@ -97,122 +247,114 @@ export function ImagesPage() {
         field: "code",
         headerName: "Código",
         width: 120,
-        editable: false,
+        filterable: false,
+        sortable: false,
       },
       {
         field: "desc",
         headerName: "Descripción",
         flex: 1,
         minWidth: 225,
-        editable: false,
-      },
-      {
-        field: "extra_desc",
-        headerName: "Descripción Adicional",
-        minWidth: 200,
-        editable: false,
+        filterable: false,
+        sortable: false,
       },
       {
         field: "lab",
         headerName: "Laboratorio",
         minWidth: 100,
-        editable: false,
-        type: "string",
-        renderEditCell: (params) => <ItemSelect {...params} options={labs} />,
-        render: (params) => {
-          const selectedOption = labs.find((opt) => opt.value === params.value);
-          return selectedOption ? selectedOption.label : params.value;
-        },
+        filterable: false,
+        sortable: false,
       },
       {
         field: "category",
-        headerName: "Categorías",
+        headerName: "Categoría",
         minWidth: 135,
-        editable: false,
-        type: "string",
-        renderEditCell: (params) => (
-          <ItemSelect {...params} options={categories} />
-        ),
-        render: (params) => {
-          const selectedOption = categories.find(
-            (opt) => opt.value === params.value
-          );
-          return selectedOption ? selectedOption.label : params.value;
-        },
-      },
-      {
-        field: "listed",
-        headerName: "Visible",
-        type: "boolean",
-        minWidth: 60,
-        align: "center",
-        editable: false,
+        type: "singleSelect",
+        filterable: false,
+        sortable: false,
       },
       {
         field: "image",
-        headerName: "Imagen",
+        headerName: "Imágenes",
         type: "boolean",
-        minWidth: 60,
+        minWidth: 80,
         align: "center",
-        editable: false,
+        filterable: false,
+        sortable: false,
       },
     ],
-    [labs]
+    []
   );
 
-  const noRowsMessage = error
-    ? `Error: ${error.message || "Ocurrió un error al cargar los datos."}`
-    : "No se encontraron resultados.";
-
-  const handleSortModelChange = (model) => {
-    if (model.length === 0) {
-      setSort({});
-    } else {
-      const { field, sort: direction } = model[0];
-      setSort({ key: field, direction });
-    }
-  };
-
-  const sortModel = React.useMemo(
-    () => (sort && sort.key ? [{ field: sort.key, sort: sort.direction }] : []),
+  const handleSortModelChange = (model) =>
+    setSort(
+      model.length > 0 ? { key: model[0].field, direction: model[0].sort } : {}
+    );
+  const sortModel = useMemo(
+    () => (sort?.key ? [{ field: sort.key, sort: sort.direction }] : []),
     [sort]
   );
 
   const handlePaginationModelChange = (newModel) => {
-    if (newModel.pageSize !== paginationModel.pageSize) {
+    if (newModel.pageSize !== (pagination?.limit || 25))
       setLimit(newModel.pageSize);
-    }
-    if (newModel.page !== paginationModel.page) {
+    if (newModel.page !== (pagination?.page - 1 || 0))
       setPage(newModel.page + 1);
-    }
   };
 
   const paginationModel = {
-    page: pagination ? pagination.page - 1 : 0,
+    page: (pagination?.page || 1) - 1,
     pageSize: pagination?.limit || 25,
   };
 
+  const handleRefresh = useCallback(() => {
+    setSearch("");
+  }, [setSearch]);
+
+  const handleFilterModelChange = useCallback(
+    (newModel) => {
+      setFilterModel(newModel);
+
+      const newFilters = newModel.items.reduce((acc, item) => {
+        if (item.value) {
+          acc[item.field] = item.value;
+        }
+        return acc;
+      }, {});
+
+      setFilters(newFilters);
+    },
+    [setFilters]
+  );
+
   function ToolBox() {
     return (
-      <Stack direction={"row"} sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={1}>
-          <Searchbox setSearch={setSearch} />
-          <Tooltip title="Actualizar" arrow>
-            <IconButton onClick={handleRefresh}>
-              <Refresh />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Actualizar" arrow>
-            <IconButton>
-              <AddToPhotos />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Actualizar" arrow>
-            <IconButton>
-              <ImageNotSupported />
-            </IconButton>
-          </Tooltip>
-        </Stack>
+      <Stack direction="row" sx={{ mb: 2 }} spacing={1}>
+        <Searchbox setSearch={setSearch} />
+        <FormControl sx={{ minWidth: 150 }} size="small">
+          <InputLabel>Filtrar por:</InputLabel>
+          <Select
+            value={hasImageFilter}
+            onChange={handleImageFilterChange}
+            label="Filtrar por:"
+          >
+            <MenuItem value={"any"} selected>
+              Todos
+            </MenuItem>
+            <MenuItem value={"false"}>Sin imagen</MenuItem>
+            <MenuItem value={"true"}>Con imagen</MenuItem>
+          </Select>
+        </FormControl>
+        <Tooltip title="Actualizar" arrow>
+          <IconButton onClick={handleRefresh}>
+            <Refresh />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Añadir imágenes por código de producto" arrow>
+          <IconButton onClick={() => setIsUploadByCodeDialogOpen(true)}>
+            <AddPhotoAlternate />
+          </IconButton>
+        </Tooltip>
       </Stack>
     );
   }
@@ -220,30 +362,26 @@ export function ImagesPage() {
   return (
     <PageContainer maxWidth={false}>
       <ToolBox />
-      <Stack direction={"row"} spacing={3} sx={{ width: "100%", flex: 1 }}>
+      <Stack
+        direction={"row"}
+        spacing={2}
+        sx={{ width: "100%", height: "75vh" }}
+      >
         <Paper
           sx={{
-            width: "100%",
-            borderRadius: 3,
-            overflow: "hidden",
+            flex: 1,
             display: "flex",
             flexDirection: "column",
-            height: "72vh",
+            borderRadius: 3,
+            overflow: "hidden",
           }}
           variant="outlined"
         >
           <DataGrid
-            rows={items || []}
+            rows={mappedItems || []}
             columns={productColumns}
             getRowId={(row) => row._id}
             loading={loading}
-            components={{
-              NoRowsOverlay: () => (
-                <CustomNoRowsOverlay message={noRowsMessage} />
-              ),
-              LoadingOverlay: CircularProgress,
-            }}
-            pagination
             paginationMode="server"
             rowCount={pagination?.total || 0}
             paginationModel={paginationModel}
@@ -252,14 +390,93 @@ export function ImagesPage() {
             sortingMode="server"
             sortModel={sortModel}
             onSortModelChange={handleSortModelChange}
+            onRowClick={handleRowClick}
+            selectionModel={selectedProduct ? selectedProduct._id : undefined}
+            filterModel={filterModel}
+            onFilterModelChange={handleFilterModelChange}
+            components={{
+              NoRowsOverlay: () => (
+                <CustomNoRowsOverlay
+                  message={
+                    error
+                      ? `Error: ${error.message}`
+                      : "No se encontraron resultados."
+                  }
+                />
+              ),
+              LoadingOverlay: CircularProgress,
+            }}
+            sx={{
+              border: 0,
+              "& .MuiDataGrid-row--selected": {
+                bgcolor: "action.selected",
+                "&:hover": { bgcolor: "action.hover" },
+              },
+              "& .MuiDataGrid-cell:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-cell:focus-within": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-columnHeader:focus": {
+                outline: "none",
+              },
+              "& .MuiDataGrid-columnHeader:focus-within": {
+                outline: "none",
+              },
+            }}
             rowHeight={40}
-            sx={{ border: 0, flex: 1 }}
+            localeText={esES.components.MuiDataGrid.defaultProps.localeText}
           />
         </Paper>
-        <Box sx={{ width: "30%" }}>
-          <MultiImageManager />
+
+        <Box sx={{ width: "35%", minWidth: "350px", maxWidth: "500px" }}>
+          <MultiImageManager
+            selectedProduct={selectedProduct}
+            existingImages={existingImages}
+            newImages={newImages}
+            onNewImages={handleNewImages}
+            onUpload={handleUpload}
+            onDeleteExisting={handleDeleteExisting}
+            onDeleteNew={handleDeleteNew}
+            onClearAll={handleClearAllImages}
+            isLoading={imagesLoading}
+            isUploading={uploading}
+            alreadyHasPrincipal={hasPrincipalImage}
+          />
         </Box>
       </Stack>
+
+      <Dialog open={notification.open} onClose={handleCloseNotification}>
+        <DialogTitle>{notification.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{notification.message}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNotification} autoFocus>
+            Cerrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmDialog.open} onClose={handleCloseConfirm}>
+        <DialogTitle>{confirmDialog.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{confirmDialog.message}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirm}>Cancelar</Button>
+          <Button onClick={confirmDialog.onConfirm} color="error" autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <UploadByCodeDialog
+        open={isUploadByCodeDialogOpen}
+        onClose={() => setIsUploadByCodeDialogOpen(false)}
+        onUploadComplete={() => (fetchItems(), setSearch(""))}
+      />
     </PageContainer>
   );
 }

@@ -20,8 +20,11 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import UnauthorizedPage from "./pages/unaoutorized.page";
 import NotFoundPage from "./pages/notfound.page";
-import ImagesPage from "./pages/images.page";
 import ProductsImageWrapper from "./pages/images.page";
+import OrdersPageWrapper from "./pages/orders.page";
+import OrderDetailsPage from "./pages/orderDetails.page";
+import AdminsPageWrapper from "./pages/admins.page";
+import HomePage from "./pages/home.page";
 
 const router = createBrowserRouter([
   {
@@ -48,9 +51,13 @@ const router = createBrowserRouter([
             children: [
               {
                 index: true,
-                element: <Navigate to="/clients/crud" replace />,
+                element: <Navigate to="home" replace />,
               },
 
+              {
+                path: "home",
+                children: [{ index: true, element: <HomePage /> }],
+              },
               {
                 path: "clients/crud",
                 element: (
@@ -66,16 +73,9 @@ const router = createBrowserRouter([
                 children: [{ index: true, Component: ProductsWrapper }],
               },
               {
-                path: "products/labs",
-                element: (
-                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
-                ),
-                children: [{ index: true, Component: LabsPage }],
-              },
-              {
                 path: "products/images",
                 element: (
-                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                  <ProtectedRoute allowedRoles={["images", "admin", "superadmin"]} />
                 ),
                 children: [{ index: true, Component: ProductsImageWrapper }],
               },
@@ -88,6 +88,27 @@ const router = createBrowserRouter([
                 path: "products/migration",
                 element: <ProtectedRoute allowedRoles={["superadmin"]} />,
                 children: [{ index: true, Component: ProductMigrationPage }],
+              },
+              {
+                path: "orders/manage",
+                element: (
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                ),
+                children: [{ index: true, Component: OrdersPageWrapper }],
+              },
+              {
+                path: "orders/manage/:orderId",
+                element: (
+                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
+                ),
+                children: [{ index: true, Component: OrderDetailsPage }],
+              },
+              {
+                path: "admins/manage",
+                element: (
+                  <ProtectedRoute allowedRoles={["superadmin"]} />
+                ),
+                children: [{ index: true, Component: AdminsPageWrapper }],
               },
             ],
           },

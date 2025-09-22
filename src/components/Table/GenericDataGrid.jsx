@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { Box, Paper, Typography, CircularProgress } from "@mui/material";
+import { esES } from "@mui/x-data-grid/locales";
 
-const CustomNoRowsOverlay = ({ message }) => (
+export const CustomNoRowsOverlay = ({ message }) => (
   <Box
     sx={{
       display: "flex",
@@ -28,6 +29,10 @@ export const GenericDataGrid = ({
   onSortChange,
   isFullScreen,
   onEditChange,
+  filterModel,
+  onFilterModelChange,
+  selectionModel,
+  onSelectionChange,
 }) => {
   const gridColumns = React.useMemo(
     () =>
@@ -37,13 +42,24 @@ export const GenericDataGrid = ({
         sortable: col.sortable,
         align: col.align || "left",
         headerAlign: col.align || "left",
-        renderCell: col.render ? (params) => col.render(params.row) : undefined,
         type: col.type,
         width: col.width,
         minWidth: col.minWidth,
         flex: col.flex,
         editable: col.editable,
+        filterable: col.filterable !== undefined ? col.filterable : true,
+        valueOptions: col.valueOptions,
+        renderCell:
+        col.renderCell
+          ? (params) => col.renderCell({ row: params.row, value: params.value })
+          : col.render
+          ? (params) => col.render({ row: params.row, value: params.value })
+          : undefined,
         renderEditCell: col.renderEditCell,
+        valueGetter: col.valueGetter
+          ? (params) => col.valueGetter({ row: params.row, value: params.value })
+          : undefined,
+        sortComparator: col.sortComparator,
       })),
     [columns]
   );
@@ -123,14 +139,21 @@ export const GenericDataGrid = ({
         columns={gridColumns}
         getRowId={(row) => row._id}
         loading={loading}
-        components={{
-          NoRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
-          LoadingOverlay: CircularProgress,
+        slots={{
+          noRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
+          loadingOverlay: CircularProgress,
         }}
+        initialState={{}}
+        hideFooterSelectedRowCount
+        rowSelectionModel={selectionModel}
+        onRowSelectionModelChange={(newModel) => onSelectionChange?.(newModel)}
+        checkboxSelection={false}
+        disableRowSelectionOnClick={false}
+        disableMultipleRowSelection
+        // --- manejo de paginación
         pagination
         paginationMode="server"
         rowCount={pagination?.total || 0}
-        // --- manejo de paginación
         paginationModel={paginationModel}
         onPaginationModelChange={handlePaginationModelChange}
         pageSizeOptions={[25, 50, 100]}
@@ -138,6 +161,10 @@ export const GenericDataGrid = ({
         sortingMode="server"
         sortModel={sortModel}
         onSortModelChange={handleSortModelChange}
+        // --- manejo de filtrado
+        filterMode="server"
+        filterModel={filterModel}
+        onFilterModelChange={onFilterModelChange}
         // --- manejo de edición
         editMode="row"
         processRowUpdate={handleProcessRowUpdate}
@@ -145,8 +172,9 @@ export const GenericDataGrid = ({
         // ver si se puede implementar con snackbar
         onProcessRowUpdateError={(error) => console.error(error)}
         // ---------------------------------------
-        rowHeight={40}
-        sx={{ border: 0, flex: 1 }}
+        rowHeight={35}
+        sx={{ border: 0, flex: 1, fontSize:".8rem" }}
+        localeText={esES.components.MuiDataGrid.defaultProps.localeText}
       />
     </Paper>
   );
