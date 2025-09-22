@@ -35,8 +35,32 @@ function ImageViewer({ open, imageUrl, onClose }) {
   );
 }
 
+/** Quita la extensión, TRIM al basename y devuelve el código limpio */
 function extractCodeFromFilename(name) {
-  return String(name || "").replace(/\.[^/.]+$/, "");
+  const str = String(name || "");
+  const lastDot = str.lastIndexOf(".");
+  const base = lastDot > 0 ? str.slice(0, lastDot) : str;
+  return base.trim(); // 👈 aquí está la magia
+}
+
+/** Recompone un nombre de archivo con el basename TRIMeado y la misma extensión */
+function sanitizeFilename(name) {
+  const str = String(name || "");
+  const lastDot = str.lastIndexOf(".");
+  if (lastDot <= 0) return str.trim(); // sin extensión o punto al inicio
+  const base = str.slice(0, lastDot).trim(); // 👈 trim sólo al basename
+  const ext = str.slice(lastDot); // conserva la extensión original (incluye el punto)
+  return `${base}${ext}`;
+}
+
+/** Crea un File nuevo con el nombre saneado para que el backend reciba el nombre correcto */
+function sanitizeFile(file) {
+  const cleanName = sanitizeFilename(file.name);
+  if (cleanName === file.name) return file; // ya está limpio, reusa el mismo objeto
+  return new File([file], cleanName, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
 }
 
 const norm = (s) =>
@@ -68,12 +92,13 @@ export default function UploadByCodeDialog({
 
   /** -------- Dropzone -------- */
   const onDrop = useCallback((acceptedFiles) => {
-    const processedFiles = acceptedFiles.map((file) =>
-      Object.assign(file, {
+    const processedFiles = acceptedFiles.map((raw) => {
+      const file = sanitizeFile(raw);
+      return Object.assign(file, {
         preview: URL.createObjectURL(file),
-        code: file.name.replace(/\.[^/.]+$/, ""),
-      })
-    );
+        code: extractCodeFromFilename(file.name),
+      });
+    });
     setFiles(processedFiles);
     setUploadResult(null);
     setCompleted(false);
