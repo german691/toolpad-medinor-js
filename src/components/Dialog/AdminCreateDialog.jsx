@@ -21,7 +21,6 @@ import {
 import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
 import { z } from "zod";
-import { createNewAdmin } from "../../services/adminService";
 
 const DEFAULT_ROLES = ["admin", "superadmin", "images"];
 

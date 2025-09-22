@@ -14,6 +14,13 @@ export const useClientMigrationContext = () => {
   return context;
 };
 
+// Campos seleccionables por el usuario (front). El back valida su propia whitelist.
+const DEFAULT_REPLACE_FIELDS = {
+  RAZON_SOCI: true,
+  IDENTIFTRI: true,
+  LEVEL: false, // por defecto desmarcado
+};
+
 export function ClientMigrationProvider({ children }) {
   const [parsedData, setParsedData] = useState(null);
   const [error, setError] = useState(null);
@@ -22,6 +29,15 @@ export function ClientMigrationProvider({ children }) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [processedData, setProcessedData] = useState(null);
   const [migrationComplete, setMigrationComplete] = useState(false);
+
+  // Flags
+  const [replaceExisting, setReplaceExisting] = useState(false);
+  const [replaceFields, setReplaceFields] = useState(DEFAULT_REPLACE_FIELDS);
+
+  const getSelectedFieldKeys = () =>
+    Object.entries(replaceFields)
+      .filter(([, v]) => Boolean(v))
+      .map(([k]) => k);
 
   const handleFileAccepted = async (file) => {
     setIsLoadingFile(true);
@@ -41,10 +57,11 @@ export function ClientMigrationProvider({ children }) {
     setIsProcessing(true);
     setError(null);
     try {
+      const compareFields = getSelectedFieldKeys();
       const response = await api.post("/clients/analyze", {
         clients: parsedData,
+        compareFields, // el back usará sólo los permitidos
       });
-
       setProcessedData(response.data);
     } catch (err) {
       const errorMessage = err.response?.data?.message || `${err}`;
@@ -59,17 +76,25 @@ export function ClientMigrationProvider({ children }) {
       setError("No hay datos procesados para migrar.");
       return;
     }
-
     setIsConfirming(true);
     setError(null);
     try {
-      const response = await api.post("/clients/make-migration", processedData);
+      const fieldsToReplace = getSelectedFieldKeys();
+      const response = await api.post("/clients/make-migration", {
+        ...processedData,
+        replaceExisting,
+        fieldsToReplace, // el back usará sólo los permitidos
+      });
 
       const createdCount =
         response.data?.data?.createdCount ??
         processedData.data.newClients.length;
 
-      setProcessedData((prev) => (prev ? { ...prev, createdCount } : null));
+      const modifiedCount = response.data?.data?.modifiedCount ?? 0;
+
+      setProcessedData((prev) =>
+        prev ? { ...prev, createdCount, modifiedCount } : null
+      );
       setMigrationComplete(true);
     } catch (err) {
       const errorMessage =
@@ -89,6 +114,8 @@ export function ClientMigrationProvider({ children }) {
     setMigrationComplete(false);
     setIsProcessing(false);
     setIsConfirming(false);
+    setReplaceExisting(false);
+    setReplaceFields(DEFAULT_REPLACE_FIELDS);
   };
 
   const onErrorClose = () => setError(null);
@@ -106,6 +133,10 @@ export function ClientMigrationProvider({ children }) {
     executeMigration,
     handleClear,
     onErrorClose,
+    replaceExisting,
+    setReplaceExisting,
+    replaceFields,
+    setReplaceFields,
   };
 
   return (
