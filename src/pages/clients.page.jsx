@@ -21,6 +21,12 @@ const clientColumns = [
     editable: true,
   },
   {
+    accessor: "nickname",
+    header: "Nombre de pila",
+    minWidth: 180,
+    editable: true,
+  },
+  {
     accessor: "identiftri",
     header: "Identificador Fiscal",
     minWidth: 180,
