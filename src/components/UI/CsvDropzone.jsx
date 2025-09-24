@@ -1,15 +1,14 @@
-import { useCallback } from "react";
-import { Box, Typography } from "@mui/material";
+import { useCallback, useMemo } from "react";
+import { Box, Typography, Chip, Stack } from "@mui/material";
 import { useDropzone } from "react-dropzone";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 export default function CsvDropzone({ context }) {
   const { handleFileAccepted, isLoadingFile } = context();
 
   const onDrop = useCallback(
     (acceptedFiles) => {
-      if (acceptedFiles && acceptedFiles.length > 0) {
-        handleFileAccepted(acceptedFiles[0]);
-      }
+      if (acceptedFiles?.length) handleFileAccepted(acceptedFiles[0]);
     },
     [handleFileAccepted]
   );
@@ -27,39 +26,69 @@ export default function CsvDropzone({ context }) {
     disabled: isLoadingFile,
   });
 
-  const isActive = isDragActive || isLoadingFile;
+  const state = useMemo(
+    () => (isLoadingFile ? "loading" : isDragActive ? "active" : "idle"),
+    [isLoadingFile, isDragActive]
+  );
 
   return (
     <Box
       {...getRootProps()}
-      sx={{
+      sx={(theme) => ({
+        position: "relative",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        flexDirection: "column",
-        fontWeight: 600,
-        border: `2px dashed ${isActive ? "#4caf50" : "#1976d2"}`,
-        padding: "2rem",
-        textAlign: "center",
-        borderRadius: "8px",
-        color: isActive ? "#4caf50" : "#1976d2",
-        background: isActive ? "#c8e6c999" : "#e3f2fd02",
+        gap: 1.5,
+        borderRadius: 3,
+        p: { xs: 4, sm: 6 },
+        minHeight: 320,
         cursor: isLoadingFile ? "default" : "pointer",
-        transition:
-          "border .24s ease-in-out, background-color .24s ease-in-out",
-        opacity: isLoadingFile ? 0.7 : 1,
-        minHeight: "200px",
-        mt: 4,
-      }}
+        border: "2px dashed",
+        borderColor:
+          state === "active"
+            ? theme.palette.success.main
+            : theme.palette.primary.main,
+        color:
+          state === "active"
+            ? theme.palette.success.main
+            : theme.palette.primary.main,
+        background:
+          state === "active"
+            ? theme.palette.success.main + "14"
+            : theme.palette.primary.main + "0A",
+        transition: "all .2s ease",
+        boxShadow:
+          state === "active"
+            ? "0 6px 24px rgba(0,0,0,.08)"
+            : "0 4px 18px rgba(0,0,0,.06)",
+        "&:hover": {
+          boxShadow: isLoadingFile ? undefined : "0 10px 30px rgba(0,0,0,.10)",
+          transform: isLoadingFile ? undefined : "translateY(-1px)",
+        },
+        opacity: isLoadingFile ? 0.75 : 1,
+      })}
     >
       <input {...getInputProps()} />
-
-      <Typography variant="body1">
+      <CloudUploadIcon sx={{ fontSize: 56 }} />
+      <Typography variant="h6">
         {isLoadingFile
           ? "Procesando archivo..."
           : isDragActive
-            ? "¡Suelta el archivo aquí!"
-            : "Arrastra un archivo (CSV, XLS, XLSX) aquí, o haz clic para seleccionarlo"}
+            ? "Soltá el archivo aquí"
+            : "Arrastrá tu archivo o hacé clic"}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Formatos aceptados
+      </Typography>
+      <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+        <Chip size="small" label=".csv" />
+        <Chip size="small" label=".xls" />
+        <Chip size="small" label=".xlsx" />
+      </Stack>
+      <Typography variant="caption" color="text.secondary">
+        Máximo 1 archivo por vez
       </Typography>
     </Box>
   );

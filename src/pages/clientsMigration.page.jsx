@@ -16,8 +16,8 @@ function ClientsView() {
       <LoadingOverlay open={isLoadingFile || isProcessing || isConfirming} />
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
         Utilice el panel inferior para cargar un archivo con la información de
-        sus productos. El sistema validará los datos, eliminará duplicados y
-        mostrará los resultados. Posteriormente, podrá gestionar los productos
+        sus clientes. El sistema validará los datos, eliminará duplicados y
+        mostrará los resultados. Posteriormente, podrá gestionar los clientes
         recientemente cargados.
       </Typography>
       <ClientMigrationComponent />
