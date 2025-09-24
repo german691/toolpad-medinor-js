@@ -28,51 +28,39 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   },
 
   { kind: "header", title: "Clientes" },
+
   {
-    segment: "clients",
-    title: "Clientes",
-    icon: <Person />,
-    children: [
-      {
-        segment: "migration",
-        title: "Migración de Clientes",
-        icon: <PeopleAlt />,
-        roles: ["superadmin"],
-      },
-      {
-        segment: "crud",
-        title: "Alta, Baja y Modificación",
-        icon: <PersonAdd />,
-        roles: ["admin", "superadmin"],
-      },
-    ],
+    segment: "clients/migration",
+    title: "Migración de Clientes",
+    icon: <PeopleAlt />,
+    roles: ["superadmin"],
+  },
+  {
+    segment: "clients/crud",
+    title: "Gestión de Clientes",
+    icon: <PersonAdd />,
+    roles: ["admin", "superadmin"],
   },
 
   { kind: "header", title: "Productos" },
+
   {
-    segment: "products",
-    title: "Productos",
-    icon: <AddBox />,
-    children: [
-      {
-        segment: "migration",
-        title: "Migración de Productos",
-        icon: <LibraryAdd />,
-        roles: ["superadmin"],
-      },
-      {
-        segment: "crud",
-        title: "Gestión",
-        icon: <Edit />,
-        roles: ["admin", "superadmin"],
-      },
-      {
-        segment: "images",
-        title: "Imágenes",
-        icon: <Image />,
-        roles: ["images", "admin", "superadmin"],
-      },
-    ],
+    segment: "products/migration",
+    title: "Migración de Productos",
+    icon: <LibraryAdd />,
+    roles: ["superadmin"],
+  },
+  {
+    segment: "products/crud",
+    title: "Gestión de Productos",
+    icon: <Edit />,
+    roles: ["admin", "superadmin"],
+  },
+  {
+    segment: "products/images",
+    title: "Cargar Imágenes",
+    icon: <Image />,
+    roles: ["images", "admin", "superadmin"],
   },
 
   { kind: "header", title: "Pedidos" },
@@ -86,7 +74,7 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   { kind: "header", title: "Administradores" },
   {
     segment: "admins/manage",
-    title: "Administrar",
+    title: "Gestión de Administradores",
     icon: <Group />,
     roles: ["superadmin"],
   },

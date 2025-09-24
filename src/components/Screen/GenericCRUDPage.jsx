@@ -460,7 +460,7 @@ export function GenericCRUDPage({
   );
 
   return (
-    <PageContainer maxWidth={false}>
+    <PageContainer maxWidth={false} breadcrumbs={[]}>
       <Box sx={containerSx}>
         <ToolbarButtons />
         <GenericDataGrid

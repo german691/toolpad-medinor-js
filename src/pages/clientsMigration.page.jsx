@@ -27,7 +27,7 @@ function ClientsView() {
 
 export default function ClientMigrationPage() {
   return (
-    <PageContainer>
+    <PageContainer breadcrumbs={[]}>
       <ClientMigrationProvider>
         <ClientsView />
       </ClientMigrationProvider>

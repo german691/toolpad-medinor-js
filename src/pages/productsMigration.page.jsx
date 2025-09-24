@@ -27,7 +27,7 @@ function ProductsView() {
 
 export default function ProductMigrationPage() {
   return (
-    <PageContainer>
+    <PageContainer breadcrumbs={[]}>
       <ProductMigrationProvider>
         <ProductsView />
       </ProductMigrationProvider>

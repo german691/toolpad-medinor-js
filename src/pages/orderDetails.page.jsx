@@ -31,10 +31,10 @@ import { getProductImages } from "../services/imageService";
 import { closeOrder, getOrderById } from "../services/orderService";
 
 const formatCurrency = (value) => {
-  if (value === null || typeof value === "undefined") {
+  if (value === null || typeof value === "undefined" || isNaN(value)) {
     return "$ N/A";
   }
-  return `$ ${value.toLocaleString("es-AR", {
+  return `$ ${Number(value).toLocaleString("es-AR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -70,12 +70,12 @@ const OrderItemRow = ({ item, onImageClick }) => {
       return;
     }
     const url = await fetchImage();
-    if (url) {
-      onImageClick(url);
-    }
+    if (url) onImageClick(url);
   };
 
-  const itemTotalWithDiscount = item.priceDiscount * item.quantity;
+  // Totales por ítem:
+  const itemTotalFinal =
+    Number(item.priceWithOffer || 0) * Number(item.quantity || 0);
 
   return (
     <TableRow
@@ -92,14 +92,23 @@ const OrderItemRow = ({ item, onImageClick }) => {
       <TableCell component="th" scope="row">
         {item.product?.desc || "N/A"}
       </TableCell>
-      <TableCell align="right">{item.quantity || "N/A"}</TableCell>
+
       <TableCell align="right">{formatCurrency(item.price)}</TableCell>
       <TableCell align="right">
-        {item.discountAmount > 0 ? `${item.discountAmount.toFixed(2)}%` : "0%"}
+        {item.discountAmount > 0
+          ? formatCurrency(item.discountAmount)
+          : "$ 0,00"}
       </TableCell>
       <TableCell align="right">
-        {formatCurrency(itemTotalWithDiscount)}
+        {formatCurrency(item.priceWithDiscount)}
       </TableCell>
+      <TableCell align="right">
+        {item.offerAmount > 0 ? formatCurrency(item.offerAmount) : "$ 0,00"}
+      </TableCell>
+      <TableCell align="right">{formatCurrency(item.priceWithOffer)}</TableCell>
+
+      <TableCell align="right">{item.quantity || "N/A"}</TableCell>
+      <TableCell align="right">{formatCurrency(itemTotalFinal)}</TableCell>
     </TableRow>
   );
 };
@@ -138,21 +147,10 @@ export default function OrderDetailsPage() {
     fetchOrder();
   }, [orderId]);
 
-  const handleImageClick = (url) => {
-    setFullScreenImage(url);
-  };
-
-  const handleOpenDialog = () => {
-    setOpenConfirmDialog(true);
-  };
-
-  const handleCloseDialog = () => {
-    setOpenConfirmDialog(false);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
+  const handleImageClick = (url) => setFullScreenImage(url);
+  const handleOpenDialog = () => setOpenConfirmDialog(true);
+  const handleCloseDialog = () => setOpenConfirmDialog(false);
+  const handleCloseSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
 
   const handleConfirmCloseOrder = async () => {
     handleCloseDialog();
@@ -175,7 +173,7 @@ export default function OrderDetailsPage() {
 
   if (loading) {
     return (
-      <PageContainer>
+      <PageContainer breadcrumbs={[]}>
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>
@@ -185,7 +183,7 @@ export default function OrderDetailsPage() {
 
   if (error || !order) {
     return (
-      <PageContainer>
+      <PageContainer breadcrumbs={[]}>
         <Alert severity="error">{error || "Pedido no encontrado."}</Alert>
         <Button
           startIcon={<ArrowBackIcon />}
@@ -198,8 +196,11 @@ export default function OrderDetailsPage() {
     );
   }
 
+  const showDiscount = Number(order.totalDiscountAmount || 0) > 0;
+  const showOffer = Number(order.totalOfferAmount || 0) > 0;
+
   return (
-    <PageContainer>
+    <PageContainer breadcrumbs={[]}>
       <Dialog
         open={!!fullScreenImage}
         onClose={() => setFullScreenImage(null)}
@@ -233,6 +234,7 @@ export default function OrderDetailsPage() {
           </IconButton>
         </DialogContent>
       </Dialog>
+
       <Dialog
         open={openConfirmDialog}
         onClose={handleCloseDialog}
@@ -255,6 +257,7 @@ export default function OrderDetailsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
@@ -309,16 +312,26 @@ export default function OrderDetailsPage() {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: "semibold" }}>Código</TableCell>
-
                 <TableCell sx={{ fontWeight: "semibold" }}>Producto</TableCell>
+
                 <TableCell align="right" sx={{ fontWeight: "semibold" }}>
-                  Cantidad
-                </TableCell>
-                <TableCell align="right" sx={{ fontWeight: "semibold" }}>
-                  Precio Unitario
+                  Precio
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: "semibold" }}>
                   Descuento
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: "semibold" }}>
+                  P. con descuento
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: "semibold" }}>
+                  Oferta
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: "semibold" }}>
+                  Precio Final
+                </TableCell>
+
+                <TableCell align="right" sx={{ fontWeight: "semibold" }}>
+                  Cantidad
                 </TableCell>
                 <TableCell align="right" sx={{ fontWeight: "semibold" }}>
                   Total
@@ -337,6 +350,7 @@ export default function OrderDetailsPage() {
           </Table>
         </TableContainer>
       </Paper>
+
       <Box
         sx={{
           display: "flex",
@@ -346,30 +360,57 @@ export default function OrderDetailsPage() {
           alignItems: "flex-end",
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "400px" }}>
-          {order.totalDiscountAmount > 0 && (
-            <>
-              <Stack direction="row" justifyContent="space-between" mb={1}>
-                <Typography variant="body1">Subtotal</Typography>
-                <Typography variant="body1">
-                  {formatCurrency(order.total)}
-                </Typography>
-              </Stack>
-              <Stack direction="row" justifyContent="space-between" mb={1}>
-                <Typography variant="body1">Ahorro Total</Typography>
-                <Typography
-                  variant="body1"
-                  color="success.main"
-                  fontWeight="semibold"
-                >
-                  -{formatCurrency(order.totalDiscountAmount)}
-                </Typography>
-              </Stack>
-              <Divider sx={{ my: 1 }} />
-            </>
+        <Box sx={{ width: "100%", maxWidth: "420px" }}>
+          {/* Subtotal y ahorros */}
+          <Stack direction="row" justifyContent="space-between" mb={1}>
+            <Typography variant="body1">Subtotal</Typography>
+            <Typography variant="body1">
+              {formatCurrency(order.total)}
+            </Typography>
+          </Stack>
+
+          {showDiscount && (
+            <Stack direction="row" justifyContent="space-between" mb={1}>
+              <Typography variant="body1">Ahorro por descuento</Typography>
+              <Typography
+                variant="body1"
+                color="success.main"
+                fontWeight="semibold"
+              >
+                -{formatCurrency(order.totalDiscountAmount)}
+              </Typography>
+            </Stack>
           )}
+          <Stack direction="row" justifyContent="space-between" mb={1}>
+            <Typography variant="body1">Total con descuento</Typography>
+            <Typography variant="body1">
+              {formatCurrency(order.totalWithDiscount)}
+            </Typography>
+          </Stack>
+
+          {showOffer && (
+            <Stack direction="row" justifyContent="space-between" mb={1}>
+              <Typography variant="body1">Ahorro por oferta</Typography>
+              <Typography
+                variant="body1"
+                color="success.main"
+                fontWeight="semibold"
+              >
+                -{formatCurrency(order.totalOfferAmount)}
+              </Typography>
+            </Stack>
+          )}
+          <Stack direction="row" justifyContent="space-between" mb={1}>
+            <Typography variant="body1">Total con oferta</Typography>
+            <Typography variant="body1">
+              {formatCurrency(order.totalWithOffer)}
+            </Typography>
+          </Stack>
+
+          <Divider sx={{ my: 1 }} />
+
           <Typography align="right" fontWeight="semibold">
-            Total general: {formatCurrency(order.totalWithDiscount)}
+            Total general: {formatCurrency(order.totalFinal)}
           </Typography>
         </Box>
       </Box>

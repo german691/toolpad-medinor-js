@@ -24,7 +24,6 @@ const initialFormState = {
   username: "",
   password: "",
   active: false,
-  must_change_password: true,
   level: 0,
   nickname: "",
 };
@@ -42,7 +41,6 @@ const clientSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Solo letras, números o guiones bajos"),
   password: z.string().min(1, "La contraseña no puede estar vacía."),
   active: z.boolean(),
-  must_change_password: z.boolean(),
   level: z
     .number({ invalid_type_error: "Nivel debe ser un número" })
     .int("Debe ser un entero")
@@ -84,23 +82,19 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // normalizaciones
     let newValue = value;
     if (name === "cod_client") newValue = value.toUpperCase();
     if (name === "identiftri") newValue = value.replace(/\D/g, "").slice(0, 11);
     if (name === "level") {
-      // convertir a número (o NaN -> dejar vacío)
       newValue = value === "" ? "" : Number(value);
     }
 
     setFormData((prev) => ({ ...prev, [name]: newValue }));
 
-    // validar solo si el valor no es string vacío en campos opcionales
     if (name === "nickname" && newValue === "") {
       setErrors((prev) => ({ ...prev, [name]: "" }));
       return;
     }
-    // validar level solo si no está vacío (permite borrar para volver a tipear)
     if (name === "level" && newValue === "") {
       setErrors((prev) => ({ ...prev, [name]: "" }));
       return;
@@ -117,22 +111,15 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
 
   const handleSaveClick = async () => {
     try {
-      // preparar objeto para parseo (level como número)
       const toParse = {
         ...formData,
-        level:
-          formData.level === "" ? NaN : Number(formData.level), // forzar validación numérica
+        level: formData.level === "" ? NaN : Number(formData.level),
       };
       const parsed = clientSchema.parse(toParse);
 
-      // role fijo para clientes; profileImage se maneja aparte
-      const payload = {
-        ...parsed,
-        role: "client",
-      };
-
       setIsSaving(true);
-      await onSave(payload);
+
+      await onSave(parsed);
       handleClose();
     } catch (err) {
       if (err?.errors) {
@@ -165,7 +152,9 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
         </Tooltip>
       </DialogTitle>
 
-      <DialogContent sx={{ display: "flex", my: 2, flexDirection: "column", gap: 1 }}>
+      <DialogContent
+        sx={{ display: "flex", my: 2, flexDirection: "column", gap: 1 }}
+      >
         <Typography variant="overline" sx={{ mt: 2 }}>
           Información de cliente
         </Typography>
@@ -273,37 +262,28 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
           />
         </Box>
 
-        <Box sx={{ display: "flex", gap: 3, mt: 1 }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                name="active"
-                checked={formData.active}
-                onChange={handleCheckboxChange}
-              />
-            }
-            label="Activo"
-            labelPlacement="start"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                name="must_change_password"
-                checked={formData.must_change_password}
-                onChange={handleCheckboxChange}
-              />
-            }
-            label="Debe cambiar contraseña en el próximo inicio"
-            labelPlacement="start"
-          />
-        </Box>
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="active"
+              checked={formData.active}
+              onChange={handleCheckboxChange}
+            />
+          }
+          label="Activo"
+          labelPlacement="start"
+        />
       </DialogContent>
 
       <DialogActions sx={{ mx: 2, mb: 2 }}>
         <Button onClick={handleClose} disabled={isSaving}>
           Cancelar
         </Button>
-        <Button onClick={handleSaveClick} variant="contained" disabled={isSaving}>
+        <Button
+          onClick={handleSaveClick}
+          variant="contained"
+          disabled={isSaving}
+        >
           {isSaving ? "Guardando..." : "Guardar"}
         </Button>
       </DialogActions>
