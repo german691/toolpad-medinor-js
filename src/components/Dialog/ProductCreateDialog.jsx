@@ -23,6 +23,20 @@ import { z } from "zod";
 import getLabs from "../../services/labService";
 import getCategories from "../../services/categoryService";
 
+const offerSchema = z
+  .object({
+    percent: z
+      .number({ invalid_type_error: "Porcentaje inválido" })
+      .min(0, "Mínimo 0%")
+      .max(100, "Máximo 100%"),
+    startsAt: z.coerce.date({ invalid_type_error: "Fecha de inicio inválida" }),
+    endsAt: z.coerce.date({ invalid_type_error: "Fecha de fin inválida" }),
+  })
+  .refine((o) => o.endsAt > o.startsAt, {
+    message: "La fecha de fin debe ser mayor que la de inicio",
+    path: ["endsAt"],
+  });
+
 const productSchema = z.object({
   code: z
     .string()
@@ -39,6 +53,14 @@ const productSchema = z.object({
   medinor_price: z.number().nonnegative("El precio no puede ser negativo"),
   public_price: z.number().nonnegative("El precio no puede ser negativo"),
   price: z.number().nonnegative("El precio no puede ser negativo"),
+  discount: z.number().nonnegative("El descuento no puede ser negativo").optional(),
+  level: z
+    .number({ invalid_type_error: "Nivel debe ser un número" })
+    .int("Debe ser un entero")
+    .min(0, "No puede ser negativo")
+    .default(10),
+  // offer es opcional; si existe, valida con offerSchema
+  offer: offerSchema.optional(),
 });
 
 const initialFormState = {
@@ -53,6 +75,15 @@ const initialFormState = {
   medinor_price: 0,
   public_price: 0,
   price: 0,
+  discount: 0,
+  level: 10,
+  // UI helper para mostrar/ocultar oferta
+  useOffer: false,
+  offer: {
+    percent: 0,
+    startsAt: "",
+    endsAt: "",
+  },
 };
 
 export default function ProductCreateDialog({ open, onClose, onSave }) {
@@ -84,7 +115,6 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
 
   useEffect(() => {
     if (!open) return;
-
     handleGetLabs();
     handleGetCategories();
     setFormData(initialFormState);
@@ -96,39 +126,127 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
     onClose();
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const setField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    // coerciones suaves
+    if (["price", "public_price", "medinor_price", "discount"].includes(name)) {
+      setField(name, value === "" ? "" : Number(value));
+      return;
+    }
+    if (name === "level") {
+      setField(name, value === "" ? "" : Number(value));
+      return;
+    }
+
+    setField(name, value);
+  };
+
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+    setField(name, checked);
+  };
+
+  const handleOfferToggle = (e) => {
+    const { checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      useOffer: checked,
+      offer: checked
+        ? prev.offer
+        : { percent: 0, startsAt: "", endsAt: "" }, // reseteo UI
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      offer: "",
+      "offer.percent": "",
+      "offer.startsAt": "",
+      "offer.endsAt": "",
+    }));
+  };
+
+  const handleOfferChange = (e) => {
+    const { name, value } = e.target;
+    // name puede ser "percent" | "startsAt" | "endsAt"
+    setFormData((prev) => ({
+      ...prev,
+      offer: {
+        ...prev.offer,
+        [name]:
+          name === "percent" ? (value === "" ? "" : Number(value)) : value,
+      },
+    }));
+    setErrors((prev) => ({ ...prev, [`offer.${name}`]: "" }));
   };
 
   const handleSaveClick = async () => {
     setIsSaving(true);
-    const dataToSave = {
+
+    // construir payload
+    const base = {
       ...formData,
-      medinor_price: parseFloat(formData.medinor_price) || 0,
-      public_price: parseFloat(formData.public_price) || 0,
-      price: parseFloat(formData.price) || 0,
+      medinor_price:
+        formData.medinor_price === "" ? 0 : Number(formData.medinor_price),
+      public_price:
+        formData.public_price === "" ? 0 : Number(formData.public_price),
+      price: formData.price === "" ? 0 : Number(formData.price),
+      discount: formData.discount === "" ? 0 : Number(formData.discount),
+      level:
+        formData.level === "" || Number.isNaN(Number(formData.level))
+          ? 10
+          : Number(formData.level),
+    };
+
+    // manejar offer opcional
+    let offerToSend;
+    if (formData.useOffer) {
+      offerToSend = {
+        percent:
+          formData.offer.percent === "" ? 0 : Number(formData.offer.percent),
+        startsAt: formData.offer.startsAt,
+        endsAt: formData.offer.endsAt,
+      };
+    }
+
+    const dataToSave = {
+      code: base.code,
+      notes: base.notes || "",
+      lab: base.lab,
+      category: base.category,
+      desc: base.desc,
+      extra_desc: base.extra_desc || "",
+      iva: !!base.iva,
+      listed: !!base.listed,
+      medinor_price: Number(base.medinor_price) || 0,
+      public_price: Number(base.public_price) || 0,
+      price: Number(base.price) || 0,
+      discount:
+        base.discount === undefined || base.discount === null
+          ? 0
+          : Number(base.discount),
+      level: Number(base.level),
+      ...(formData.useOffer ? { offer: offerToSend } : {}),
     };
 
     try {
       productSchema.parse(dataToSave);
       setErrors({});
-
       await onSave(dataToSave);
       handleClose();
     } catch (err) {
       if (err instanceof z.ZodError) {
         const fieldErrors = {};
         for (const issue of err.issues) {
-          fieldErrors[issue.path[0]] = issue.message;
+          // soportar paths anidados de offer.*
+          const path = issue.path.join(".");
+          fieldErrors[path] = issue.message;
         }
         setErrors(fieldErrors);
       }
@@ -151,17 +269,17 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
       >
         Crear Nuevo Producto
         <Tooltip
-          title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único producto o quieres crear uno particular."
+          title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Usá este panel para altas individuales."
           arrow
         >
           <Info color="action" fontSize="medium" />
         </Tooltip>
       </DialogTitle>
-      <DialogContent
-        sx={{ display: "flex", my: 1, flexDirection: "column", gap: 2 }}
-      >
+
+      <DialogContent sx={{ display: "flex", my: 1, flexDirection: "column", gap: 2 }}>
         <Typography variant="overline">Información general</Typography>
         <Divider />
+
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
           <TextField
             autoFocus
@@ -185,6 +303,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             sx={{ flex: 1 }}
           />
         </Box>
+
         <TextField
           margin="dense"
           name="desc"
@@ -195,6 +314,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           error={!!errors.desc}
           helperText={errors.desc}
         />
+
         <TextField
           multiline
           maxRows={3}
@@ -205,6 +325,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           value={formData.extra_desc}
           onChange={handleInputChange}
         />
+
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
           <FormControl fullWidth margin="dense">
             <InputLabel>Laboratorio</InputLabel>
@@ -213,14 +334,16 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
               value={formData.lab}
               onChange={handleInputChange}
               error={!!errors.lab}
+              label="Laboratorio"
             >
               {labs.map((labObj) => (
-                <MenuItem key={labObj.lab} value={labObj.lab}>
-                  {labObj.lab}
+                <MenuItem key={labObj.lab || labObj._id} value={labObj.lab || labObj._id}>
+                  {labObj.lab || labObj.name || labObj._id}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+
           <FormControl fullWidth margin="dense">
             <InputLabel>Categoría</InputLabel>
             <Select
@@ -228,19 +351,25 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
               value={formData.category}
               onChange={handleInputChange}
               error={!!errors.category}
+              label="Categoría"
             >
               {categories.map((catObj) => (
-                <MenuItem key={catObj.category} value={catObj.category}>
-                  {catObj.category}
+                <MenuItem
+                  key={catObj.category || catObj._id}
+                  value={catObj.category || catObj._id}
+                >
+                  {catObj.category || catObj.name || catObj._id}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Box>
+
         <Typography variant="overline" sx={{ mt: 2 }}>
-          Precios y Estado
+          Precios, Descuentos y Estado
         </Typography>
         <Divider />
+
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2, mt: 1 }}>
           <TextField
             margin="dense"
@@ -252,6 +381,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             error={!!errors.price}
             helperText={errors.price}
             sx={{ flex: 1 }}
+            inputProps={{ min: 0, step: "0.01" }}
           />
           <TextField
             margin="dense"
@@ -263,6 +393,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             error={!!errors.public_price}
             helperText={errors.public_price}
             sx={{ flex: 1 }}
+            inputProps={{ min: 0, step: "0.01" }}
           />
           <TextField
             margin="dense"
@@ -274,8 +405,37 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             error={!!errors.medinor_price}
             helperText={errors.medinor_price}
             sx={{ flex: 1 }}
+            inputProps={{ min: 0, step: "0.01" }}
           />
         </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+          <TextField
+            margin="dense"
+            name="discount"
+            label="Descuento (valor)"
+            type="number"
+            value={formData.discount}
+            onChange={handleInputChange}
+            error={!!errors.discount}
+            helperText={errors.discount}
+            sx={{ flex: 1 }}
+            inputProps={{ min: 0, step: "0.01" }}
+          />
+          <TextField
+            margin="dense"
+            name="level"
+            label="Nivel"
+            type="number"
+            value={formData.level}
+            onChange={handleInputChange}
+            error={!!errors.level}
+            helperText={errors.level}
+            sx={{ flex: 1 }}
+            inputProps={{ min: 0, step: 1 }}
+          />
+        </Box>
+
         <Box>
           <FormControlLabel
             control={
@@ -300,7 +460,73 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             labelPlacement="end"
           />
         </Box>
+
+        <Typography variant="overline" sx={{ mt: 2 }}>
+          Oferta (opcional)
+        </Typography>
+        <Divider />
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={formData.useOffer}
+              onChange={handleOfferToggle}
+            />
+          }
+          label="Usar oferta para este producto"
+        />
+
+        {formData.useOffer && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <TextField
+                margin="dense"
+                name="percent"
+                label="Porcentaje (%)"
+                type="number"
+                value={formData.offer.percent}
+                onChange={handleOfferChange}
+                error={!!errors["offer.percent"]}
+                helperText={errors["offer.percent"]}
+                sx={{ flex: 1 }}
+                inputProps={{ min: 0, max: 100, step: 1 }}
+              />
+              <TextField
+                margin="dense"
+                name="startsAt"
+                label="Inicio"
+                type="datetime-local"
+                value={formData.offer.startsAt}
+                onChange={handleOfferChange}
+                error={!!errors["offer.startsAt"]}
+                helperText={errors["offer.startsAt"]}
+                sx={{ flex: 1 }}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                margin="dense"
+                name="endsAt"
+                label="Fin"
+                type="datetime-local"
+                value={formData.offer.endsAt}
+                onChange={handleOfferChange}
+                error={!!errors["offer.endsAt"]}
+                helperText={
+                  errors["offer.endsAt"] ||
+                  (formData.offer.startsAt &&
+                    formData.offer.endsAt &&
+                    new Date(formData.offer.endsAt) <=
+                      new Date(formData.offer.startsAt) &&
+                    "Fin debe ser mayor que Inicio")
+                }
+                sx={{ flex: 1 }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Box>
+          </Box>
+        )}
       </DialogContent>
+
       <DialogActions sx={{ mx: 2, mb: 2 }}>
         <Button onClick={handleClose} disabled={isSaving}>
           Cancelar
