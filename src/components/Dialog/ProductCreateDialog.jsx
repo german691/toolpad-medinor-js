@@ -39,6 +39,11 @@ const productSchema = z.object({
   medinor_price: z.number().nonnegative("El precio no puede ser negativo"),
   public_price: z.number().nonnegative("El precio no puede ser negativo"),
   price: z.number().nonnegative("El precio no puede ser negativo"),
+  level: z
+    .number({ invalid_type_error: "Nivel debe ser un número" })
+    .int("Debe ser un entero")
+    .min(0, "No puede ser negativo")
+    .default(10),
 });
 
 const initialFormState = {
@@ -53,6 +58,8 @@ const initialFormState = {
   medinor_price: 0,
   public_price: 0,
   price: 0,
+  discount: 0,
+  level: 0,
 };
 
 export default function ProductCreateDialog({ open, onClose, onSave }) {
@@ -84,7 +91,6 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
 
   useEffect(() => {
     if (!open) return;
-
     handleGetLabs();
     handleGetCategories();
     setFormData(initialFormState);
@@ -96,39 +102,82 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
     onClose();
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const setField = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+
+    // coerciones suaves
+    if (["price", "public_price", "medinor_price", "discount"].includes(name)) {
+      setField(name, value === "" ? "" : Number(value));
+      return;
+    }
+    if (name === "level") {
+      setField(name, value === "" ? "" : Number(value));
+      return;
+    }
+
+    setField(name, value);
+  };
+
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+    setField(name, checked);
   };
 
   const handleSaveClick = async () => {
     setIsSaving(true);
-    const dataToSave = {
+
+    // construir payload
+    const base = {
       ...formData,
-      medinor_price: parseFloat(formData.medinor_price) || 0,
-      public_price: parseFloat(formData.public_price) || 0,
-      price: parseFloat(formData.price) || 0,
+      medinor_price:
+        formData.medinor_price === "" ? 0 : Number(formData.medinor_price),
+      public_price:
+        formData.public_price === "" ? 0 : Number(formData.public_price),
+      price: formData.price === "" ? 0 : Number(formData.price),
+      discount: formData.discount === "" ? 0 : Number(formData.discount),
+      level:
+        formData.level === "" || Number.isNaN(Number(formData.level))
+          ? 10
+          : Number(formData.level),
+    };
+
+    const dataToSave = {
+      code: base.code,
+      notes: base.notes || "",
+      lab: base.lab,
+      category: base.category,
+      desc: base.desc,
+      extra_desc: base.extra_desc || "",
+      iva: !!base.iva,
+      listed: !!base.listed,
+      medinor_price: Number(base.medinor_price) || 0,
+      public_price: Number(base.public_price) || 0,
+      price: Number(base.price) || 0,
+      discount:
+        base.discount === undefined || base.discount === null
+          ? 0
+          : Number(base.discount),
+      level: Number(base.level),
     };
 
     try {
       productSchema.parse(dataToSave);
       setErrors({});
-
       await onSave(dataToSave);
       handleClose();
     } catch (err) {
       if (err instanceof z.ZodError) {
         const fieldErrors = {};
         for (const issue of err.issues) {
-          fieldErrors[issue.path[0]] = issue.message;
+          const path = issue.path.join(".");
+          fieldErrors[path] = issue.message;
         }
         setErrors(fieldErrors);
       }
@@ -151,21 +200,22 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
       >
         Crear Nuevo Producto
         <Tooltip
-          title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Utiliza este panel si solo debes migrar un único producto o quieres crear uno particular."
+          title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Usá este panel para altas individuales."
           arrow
         >
           <Info color="action" fontSize="medium" />
         </Tooltip>
       </DialogTitle>
+
       <DialogContent
         sx={{ display: "flex", my: 1, flexDirection: "column", gap: 2 }}
       >
         <Typography variant="overline">Información general</Typography>
         <Divider />
+
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
           <TextField
             autoFocus
-            margin="dense"
             name="code"
             label="Código"
             type="text"
@@ -176,7 +226,6 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             sx={{ flex: 1 }}
           />
           <TextField
-            margin="dense"
             name="notes"
             label="Notas"
             type="text"
@@ -185,8 +234,8 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             sx={{ flex: 1 }}
           />
         </Box>
+
         <TextField
-          margin="dense"
           name="desc"
           label="Descripción"
           type="text"
@@ -195,55 +244,66 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           error={!!errors.desc}
           helperText={errors.desc}
         />
+
         <TextField
           multiline
           maxRows={3}
-          margin="dense"
           name="extra_desc"
           label="Descripción adicional"
           type="text"
           value={formData.extra_desc}
           onChange={handleInputChange}
         />
+
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
-          <FormControl fullWidth margin="dense">
+          <FormControl fullWidth>
             <InputLabel>Laboratorio</InputLabel>
             <Select
               name="lab"
               value={formData.lab}
               onChange={handleInputChange}
               error={!!errors.lab}
+              label="Laboratorio"
             >
               {labs.map((labObj) => (
-                <MenuItem key={labObj.lab} value={labObj.lab}>
-                  {labObj.lab}
+                <MenuItem
+                  key={labObj.lab || labObj._id}
+                  value={labObj.lab || labObj._id}
+                >
+                  {labObj.lab || labObj.name || labObj._id}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-          <FormControl fullWidth margin="dense">
+
+          <FormControl fullWidth>
             <InputLabel>Categoría</InputLabel>
             <Select
               name="category"
               value={formData.category}
               onChange={handleInputChange}
               error={!!errors.category}
+              label="Categoría"
             >
               {categories.map((catObj) => (
-                <MenuItem key={catObj.category} value={catObj.category}>
-                  {catObj.category}
+                <MenuItem
+                  key={catObj.category || catObj._id}
+                  value={catObj.category || catObj._id}
+                >
+                  {catObj.category || catObj.name || catObj._id}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Box>
+
         <Typography variant="overline" sx={{ mt: 2 }}>
-          Precios y Estado
+          Precios, Descuentos y Estado
         </Typography>
         <Divider />
+
         <Box sx={{ display: "flex", flexDirection: "row", gap: 2, mt: 1 }}>
           <TextField
-            margin="dense"
             name="price"
             label="Precio"
             type="number"
@@ -252,9 +312,9 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             error={!!errors.price}
             helperText={errors.price}
             sx={{ flex: 1 }}
+            slotProps={{ min: 0, step: "0.01" }}
           />
           <TextField
-            margin="dense"
             name="public_price"
             label="Precio Público"
             type="number"
@@ -263,9 +323,12 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             error={!!errors.public_price}
             helperText={errors.public_price}
             sx={{ flex: 1 }}
+            slotProps={{ min: 0, step: "0.01" }}
           />
+        </Box>
+
+        <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
           <TextField
-            margin="dense"
             name="medinor_price"
             label="Precio Medinor"
             type="number"
@@ -274,8 +337,27 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
             error={!!errors.medinor_price}
             helperText={errors.medinor_price}
             sx={{ flex: 1 }}
+            slotProps={{ min: 0, step: "0.01" }}
+          />
+          <TextField
+            name="level"
+            label="Nivel"
+            type="number"
+            value={formData.level}
+            onChange={handleInputChange}
+            error={!!errors.level}
+            helperText={errors.level}
+            sx={{ flex: 1 }}
+            slotProps={{
+              htmlInput: {
+                min: 0,
+                max: 10,
+                step: 1,
+              },
+            }}
           />
         </Box>
+
         <Box>
           <FormControlLabel
             control={
@@ -301,6 +383,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           />
         </Box>
       </DialogContent>
+
       <DialogActions sx={{ mx: 2, mb: 2 }}>
         <Button onClick={handleClose} disabled={isSaving}>
           Cancelar

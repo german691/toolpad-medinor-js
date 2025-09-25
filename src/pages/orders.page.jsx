@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { PageContainer } from "@toolpad/core";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -28,6 +28,12 @@ export default function OrdersPageWrapper() {
     </CRUDProvider>
   );
 }
+
+const formatCurrency = (value) =>
+  `$ ${Number(value || 0).toLocaleString("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 export function OrdersPage() {
   const {
@@ -86,7 +92,7 @@ export function OrdersPage() {
         renderCell: (params) => {
           const totalQuantity =
             params.row.items?.reduce(
-              (total, item) => total + item.quantity,
+              (total, item) => total + (item.quantity || 0),
               0
             ) || 0;
           return totalQuantity;
@@ -124,15 +130,11 @@ export function OrdersPage() {
         ),
       },
       {
-        field: "totalWithDiscount",
+        field: "totalFinal",
         headerName: "Monto Total",
         width: 150,
         type: "number",
-        renderCell: (params) =>
-          `$ ${params.value.toLocaleString("es-AR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`,
+        renderCell: (params) => formatCurrency(params.value),
       },
     ],
     []
@@ -159,7 +161,7 @@ export function OrdersPage() {
   };
 
   return (
-    <PageContainer maxWidth={false}>
+    <PageContainer maxWidth={false} breadcrumbs={[]}>
       <Stack direction="row" sx={{ mb: 2 }} justifyContent={"space-between"}>
         <Stack direction="row" gap={1}>
           <Searchbox

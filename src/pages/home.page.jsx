@@ -114,7 +114,7 @@ function ActionCard({ to, icon, title, description, tag }) {
               direction="row"
               spacing={1}
               alignItems="center"
-              sx={{ flex: 1 }}
+              sx={{ flex: 1, justifyContent: "space-between" }}
             >
               <Typography variant="h6" component="h3">
                 {title}

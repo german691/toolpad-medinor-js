@@ -122,7 +122,7 @@ export default function LabsPage() {
   };
 
   return (
-    <PageContainer sx={{ width: "800px" }}>
+    <PageContainer sx={{ width: "800px" }} breadcrumbs={[]}>
       <LabDeleteDialog
         open={open}
         handleClose={handleClose}

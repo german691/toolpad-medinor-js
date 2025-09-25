@@ -49,15 +49,15 @@ export const GenericDataGrid = ({
         editable: col.editable,
         filterable: col.filterable !== undefined ? col.filterable : true,
         valueOptions: col.valueOptions,
-        renderCell:
-        col.renderCell
+        renderCell: col.renderCell
           ? (params) => col.renderCell({ row: params.row, value: params.value })
           : col.render
-          ? (params) => col.render({ row: params.row, value: params.value })
-          : undefined,
+            ? (params) => col.render({ row: params.row, value: params.value })
+            : undefined,
         renderEditCell: col.renderEditCell,
         valueGetter: col.valueGetter
-          ? (params) => col.valueGetter({ row: params.row, value: params.value })
+          ? (params) =>
+              col.valueGetter({ row: params.row, value: params.value })
           : undefined,
         sortComparator: col.sortComparator,
       })),
@@ -141,7 +141,6 @@ export const GenericDataGrid = ({
         loading={loading}
         slots={{
           noRowsOverlay: () => <CustomNoRowsOverlay message={noRowsMessage} />,
-          loadingOverlay: CircularProgress,
         }}
         initialState={{}}
         hideFooterSelectedRowCount
@@ -173,7 +172,7 @@ export const GenericDataGrid = ({
         onProcessRowUpdateError={(error) => console.error(error)}
         // ---------------------------------------
         rowHeight={35}
-        sx={{ border: 0, flex: 1, fontSize:".8rem" }}
+        sx={{ border: 0, flex: 1, fontSize: ".8rem" }}
         localeText={esES.components.MuiDataGrid.defaultProps.localeText}
       />
     </Paper>

@@ -360,7 +360,7 @@ export function ImagesPage() {
   }
 
   return (
-    <PageContainer maxWidth={false}>
+    <PageContainer maxWidth={false} breadcrumbs={[]}>
       <ToolBox />
       <Stack
         direction={"row"}
