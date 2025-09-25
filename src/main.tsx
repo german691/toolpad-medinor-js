@@ -11,7 +11,6 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import theme from "../theme";
 import clientsWrapper from "./pages/clients.page";
 import ProductsWrapper from "./pages/products.page";
-import LabsPage from "./pages/labs.page";
 import ClientMigrationPage from "./pages/clientsMigration.page";
 import ProductMigrationPage from "./pages/productsMigration.page";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -26,97 +25,78 @@ import OrderDetailsPage from "./pages/orderDetails.page";
 import AdminsPageWrapper from "./pages/admins.page";
 import HomePage from "./pages/home.page";
 
-const router = createBrowserRouter([
-  {
-    path: "/login",
-    Component: LoginPage,
-  },
-  {
-    path: "/unauthorized",
-    element: <UnauthorizedPage />,
-  },
-  {
-    path: "*",
-    element: <NotFoundPage />,
-  },
-  {
-    path: "/",
-    element: <App />,
-    children: [
-      {
-        element: <ProtectedRoute />,
-        children: [
-          {
-            element: <Layout />,
-            children: [
-              {
-                index: true,
-                element: <Navigate to="home" replace />,
-              },
-
-              {
-                path: "home",
-                children: [{ index: true, element: <HomePage /> }],
-              },
-              {
-                path: "clients/crud",
-                element: (
-                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
-                ),
-                children: [{ index: true, Component: clientsWrapper }],
-              },
-              {
-                path: "products/crud",
-                element: (
-                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
-                ),
-                children: [{ index: true, Component: ProductsWrapper }],
-              },
-              {
-                path: "products/images",
-                element: (
-                  <ProtectedRoute allowedRoles={["images", "admin", "superadmin"]} />
-                ),
-                children: [{ index: true, Component: ProductsImageWrapper }],
-              },
-              {
-                path: "clients/migration",
-                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
-                children: [{ index: true, Component: ClientMigrationPage }],
-              },
-              {
-                path: "products/migration",
-                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
-                children: [{ index: true, Component: ProductMigrationPage }],
-              },
-              {
-                path: "orders/manage",
-                element: (
-                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
-                ),
-                children: [{ index: true, Component: OrdersPageWrapper }],
-              },
-              {
-                path: "orders/manage/:orderId",
-                element: (
-                  <ProtectedRoute allowedRoles={["admin", "superadmin"]} />
-                ),
-                children: [{ index: true, Component: OrderDetailsPage }],
-              },
-              {
-                path: "admins/manage",
-                element: (
-                  <ProtectedRoute allowedRoles={["superadmin"]} />
-                ),
-                children: [{ index: true, Component: AdminsPageWrapper }],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-]);
+const router = createBrowserRouter(
+  [
+    {
+      path: "/login",
+      Component: LoginPage,
+    },
+    {
+      path: "/unauthorized",
+      element: <UnauthorizedPage />,
+    },
+    {
+      path: "*",
+      element: <NotFoundPage />,
+    },
+    {
+      path: "/",
+      element: <App />,
+      children: [
+        {
+          element: <ProtectedRoute />,
+          children: [
+            {
+              element: <Layout />,
+              children: [
+                {
+                  index: true, element: <Navigate to="home" replace />
+                },
+                {
+                  path: "home",
+                  children: [{ index: true, element: <HomePage /> }]
+                },
+                {
+                  path: "clients/crud",
+                  children: [{ index: true, Component: clientsWrapper }]
+                },
+                {
+                  path: "products/crud",
+                  children: [{ index: true, Component: ProductsWrapper }]
+                },
+                {
+                  path: "products/images",
+                  children: [{ index: true, Component: ProductsImageWrapper }]
+                },
+                {
+                  path: "clients/migration",
+                  children: [{ index: true, Component: ClientMigrationPage }]
+                },
+                {
+                  path: "products/migration",
+                  children: [{ index: true, Component: ProductMigrationPage }]
+                },
+                {
+                  path: "orders/manage",
+                  children: [{ index: true, Component: OrdersPageWrapper }]
+                },
+                {
+                  path: "orders/manage/:orderId",
+                  children: [{ index: true, Component: OrderDetailsPage }]
+                },
+                {
+                  path: "admins/manage",
+                  children: [{ index: true, Component: AdminsPageWrapper }]
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  { basename: "/gestion" }
+);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <Provider store={store}>
