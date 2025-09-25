@@ -42,9 +42,16 @@ export default function LoginPage() {
     dispatch(loginStart());
     try {
       const data = await loginUser({ username, password });
+
       dispatch(
-        loginSuccess({ token: data.token, user: data.user, role: data.role })
+        loginSuccess({
+          token: data.token,
+          username: data.username,
+          role: data.role,
+          fullName: data.fullName,
+        })
       );
+
       navigate("/", { replace: true });
     } catch (error) {
       const errorMessage =

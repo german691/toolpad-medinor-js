@@ -80,7 +80,7 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   },
 ];
 
-const BRANDING = { title: "Medinor" };
+const BRANDING = { title: "Gestor Medinor" };
 
 // --- Utilitario: filtra por rol y limpia headers vacíos ---
 function filterNavigationByRole(nav: any[], role?: string | null): any[] {

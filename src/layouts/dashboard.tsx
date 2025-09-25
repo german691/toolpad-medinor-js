@@ -4,19 +4,27 @@ import { DashboardLayout, ThemeSwitcher } from "@toolpad/core/DashboardLayout";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import {
-  Box,
+  Button,
+  Chip,
   IconButton,
   ListItemIcon,
   ListItemText,
   Stack,
 } from "@mui/material";
 import { Logout, Settings } from "@mui/icons-material";
-import { useDispatch } from "react-redux";
-import { logout } from "../features/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  logout,
+  selectCurrentUser,
+} from "../features/authSlice";
 
 function TopMenu() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const user = useSelector(selectCurrentUser);
+  console.log(user)
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -36,6 +44,7 @@ function TopMenu() {
 
   return (
     <Stack direction={"row"} spacing={2} alignItems="center">
+      <Chip label={`${user?.username} (${user?.role})`} />
       <ThemeSwitcher />
 
       <IconButton onClick={handleClick}>
@@ -55,7 +64,7 @@ function TopMenu() {
 
 export default function Layout() {
   return (
-    <DashboardLayout slots={{ toolbarActions: TopMenu }}>
+    <DashboardLayout slots={{ toolbarActions: TopMenu, }}>
       <Outlet />
     </DashboardLayout>
   );
