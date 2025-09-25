@@ -3,17 +3,14 @@ import { Outlet } from "react-router";
 import { ReactRouterAppProvider } from "@toolpad/core/react-router";
 import type { Navigation } from "@toolpad/core/AppProvider";
 import {
-  Person,
-  PeopleAlt,
-  PersonAdd,
-  AddBox,
-  Edit,
-  LibraryAdd,
-  Sell,
-  Image,
-  Group,
-  Home,
-} from "@mui/icons-material";
+  IconUserEdit,
+  IconEdit,
+  IconShoppingCartSearch,
+  IconPhotoEdit,
+  IconShieldCog,
+  IconHome,
+  IconTableImport,
+} from "@tabler/icons-react";
 import { useSelector } from "react-redux";
 import { selectCurrentUserRole } from "./features/authSlice";
 
@@ -23,7 +20,7 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   {
     segment: "home",
     title: "Inicio",
-    icon: <Home />,
+    icon: <IconHome />,
     // sin roles -> visible para cualquiera autenticado
   },
 
@@ -32,13 +29,13 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   {
     segment: "clients/migration",
     title: "Migración de Clientes",
-    icon: <PeopleAlt />,
+    icon: <IconTableImport />,
     roles: ["superadmin"],
   },
   {
     segment: "clients/crud",
     title: "Gestión de Clientes",
-    icon: <PersonAdd />,
+    icon: <IconUserEdit />,
     roles: ["admin", "superadmin"],
   },
 
@@ -47,19 +44,19 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   {
     segment: "products/migration",
     title: "Migración de Productos",
-    icon: <LibraryAdd />,
+    icon: <IconTableImport />,
     roles: ["superadmin"],
   },
   {
     segment: "products/crud",
     title: "Gestión de Productos",
-    icon: <Edit />,
+    icon: <IconEdit />,
     roles: ["admin", "superadmin"],
   },
   {
     segment: "products/images",
     title: "Cargar Imágenes",
-    icon: <Image />,
+    icon: <IconPhotoEdit />,
     roles: ["images", "admin", "superadmin"],
   },
 
@@ -67,7 +64,7 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   {
     segment: "orders/manage", // coincide con tu router
     title: "Lista de Pedidos",
-    icon: <Sell />,
+    icon: <IconShoppingCartSearch />,
     roles: ["admin", "superadmin"],
   },
 
@@ -75,7 +72,7 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   {
     segment: "admins/manage",
     title: "Gestión de Administradores",
-    icon: <Group />,
+    icon: <IconShieldCog />,
     roles: ["superadmin"],
   },
 ];

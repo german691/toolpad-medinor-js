@@ -18,7 +18,7 @@ import {
   MenuItem,
   FormHelperText,
 } from "@mui/material";
-import { Info } from "@mui/icons-material";
+import { IconInfoCircleFilled } from "@tabler/icons-react";
 import PropTypes from "prop-types";
 import { z } from "zod";
 
@@ -136,7 +136,7 @@ export default function AdminCreateDialog({
           title="Creá administradores internos del sistema. Asegúrate de asignar el rol correcto y usar una contraseña segura."
           arrow
         >
-          <Info color="action" fontSize="medium" />
+          <IconInfoCircleFilled fontSize="medium" />
         </Tooltip>
       </DialogTitle>
 
