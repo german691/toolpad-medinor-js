@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useCRUD } from "../hooks/context/useCRUD";
-import { Alert, AlertTitle, Snackbar } from "@mui/material";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import { bulkUpdateAdmins, createNewAdmin } from "../services/adminService";
 import AdminCreateDialog from "../components/Dialog/AdminCreateDialog";
@@ -83,6 +82,7 @@ export function AdminsPage() {
         onUpdate={handleUpdateClient}
         selectionModel={selectedModel}
         onSelectionChange={(newModel) => setSelectedModel(newModel)}
+        isAdminPage={true}
       />
       <AdminCreateDialog
         open={isCreateDialogOpen}

@@ -27,6 +27,7 @@ import {
   Add,
   Cancel,
   Delete,
+  DeleteForever,
   Fullscreen,
   FullscreenExit,
   LocalOffer,
@@ -45,6 +46,12 @@ import {
   deleteProductOffer,
   setProductOffer,
 } from "../../services/productService";
+import {
+  hardDeleteAdmin,
+  resetAdminPassword,
+} from "../../services/adminService";
+import { z } from "zod";
+import AdminPasswordDialog from "../Dialog/AdminPasswordDialog";
 
 const toStartOfDayISO = (d) => dayjs(d).startOf("day").toISOString();
 const toEndOfDayISO = (d) => dayjs(d).endOf("day").toISOString();
@@ -64,6 +71,16 @@ const getDisplayName = (row, { isProductPage, isClientPage }) => {
   return row.desc || row.title || "";
 };
 
+const resetAdminPasswordSchema = z
+  .object({
+    newPassword: z.string().min(6, "Mínimo 6 caracteres"),
+    confirmPassword: z.string().min(6, "Mínimo 6 caracteres"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
 export function GenericCRUDPage({
   columns,
   entityName,
@@ -73,6 +90,7 @@ export function GenericCRUDPage({
   onSelectionChange,
   isClientPage = false,
   isProductPage = false,
+  isAdminPage = false,
 }) {
   const {
     filters,
@@ -92,21 +110,17 @@ export function GenericCRUDPage({
 
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const handleToggleFullScreen = useCallback(
-    () => setIsFullScreen((prev) => !prev),
-    []
-  );
-
   const [modifiedRows, setModifiedRows] = useState({});
-  const hasChanges = useMemo(
-    () => Object.keys(modifiedRows).length > 0,
-    [modifiedRows]
-  );
-
   const [productHasOffer, setProductHasOffer] = useState(false);
   const [isRestPwdDialogOpen, setRestPwdDialogOpen] = useState(false);
+  const [isSetAdminPwdDialogOpen, setAdminPwdDialogOpen] = useState(false);
+  const [isHardDeleteAdminDialogOpen, setHardDeleteAdminDialogOpen] =
+    useState(false);
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState("");
+  const [formErrors, setFormErrors] = useState({});
   const [isClearOfferDialogOpen, setClearOfferDialogOpen] = useState(false);
-  const [hasOfferFilter, setOfferFilter] = useState("any"); // any | true | false
+  const [hasOfferFilter, setOfferFilter] = useState("any");
   const [isOfferDialogOpen, setOfferDialogOpen] = useState(false);
   const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
   const [offerForm, setOfferForm] = useState({
@@ -114,7 +128,6 @@ export function GenericCRUDPage({
     endsAt: toEndOfDayISO(dayjs().add(1, "day")),
     percent: "",
   });
-
   const [snack, setSnack] = useState({
     open: false,
     severity: "info",
@@ -128,8 +141,16 @@ export function GenericCRUDPage({
     () => setSnack((s) => ({ ...s, open: false })),
     []
   );
-
+  const handleToggleFullScreen = useCallback(
+    () => setIsFullScreen((p) => !p),
+    []
+  );
   const handleRefresh = useCallback(() => setSearch(""), [setSearch]);
+
+  const hasChanges = useMemo(
+    () => Object.keys(modifiedRows).length > 0,
+    [modifiedRows]
+  );
 
   const handleDataGridCancelChanges = useCallback(() => {
     setModifiedRows({});
@@ -140,10 +161,7 @@ export function GenericCRUDPage({
   const handleDataGridEditChange = useCallback((newRow, oldRow) => {
     const hasRowChanged = JSON.stringify(newRow) !== JSON.stringify(oldRow);
     if (!hasRowChanged) return;
-    setModifiedRows((prev) => ({
-      ...prev,
-      [newRow._id]: newRow,
-    }));
+    setModifiedRows((prev) => ({ ...prev, [newRow._id]: newRow }));
   }, []);
 
   const handleSaveWrapper = useCallback(async () => {
@@ -207,6 +225,37 @@ export function GenericCRUDPage({
       );
     }
   }, [selectionModel, showSnack]);
+
+  const handleSubmitAdminPassword = useCallback(
+    async (password) => {
+      const selectedId = getSingleSelectedId(selectionModel);
+      if (!selectedId) return;
+      await resetAdminPassword(selectedId, password);
+      setAdminPwdDialogOpen(false);
+      showSnack(
+        "Contraseña de administrador modificada correctamente",
+        "success"
+      );
+    },
+    [selectionModel, showSnack]
+  );
+
+  const handleHardDeleteAdmin = useCallback(async () => {
+    const selectedId = getSingleSelectedId(selectionModel);
+    if (!selectedId) {
+      showSnack("Ocurrió un problema al seleccionar usuario", "warning");
+      setHardDeleteAdminDialogOpen(false);
+      return;
+    }
+    try {
+      await hardDeleteAdmin(selectedId);
+      setHardDeleteAdminDialogOpen(false);
+      showSnack("Usuario eliminado correctamente", "success");
+      fetchItems();
+    } catch (e) {
+      showSnack(e?.message || "Error inesperado al eliminar usuario", "error");
+    }
+  }, [selectionModel, showSnack, fetchItems]);
 
   const handleDeleteOffer = useCallback(async () => {
     const selectedId = getSingleSelectedId(selectionModel);
@@ -302,58 +351,6 @@ export function GenericCRUDPage({
         justifyContent: "space-between",
       }}
     >
-      <Dialog
-        open={isRestPwdDialogOpen}
-        onClose={() => setRestPwdDialogOpen(false)}
-      >
-        <DialogTitle>{"Restaurar contraseña"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {selectedRowName ? (
-              <>
-                Vas a restaurar la contraseña de{" "}
-                <strong>{selectedRowName}</strong>.
-              </>
-            ) : (
-              'Al hacer click en confirmar, el cliente volverá a tener como contraseña el "identiftri" inicial.'
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRestPwdDialogOpen(false)}>Cancelar</Button>
-          <Button onClick={handleResetPassword} autoFocus>
-            Confirmar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={isClearOfferDialogOpen}
-        onClose={() => setClearOfferDialogOpen(false)}
-      >
-        <DialogTitle>{"Eliminar oferta"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {selectedRowName ? (
-              <>
-                Se eliminará la oferta del producto{" "}
-                <strong>{selectedRowName}</strong>.
-              </>
-            ) : (
-              "Se eliminará la oferta del producto seleccionado."
-            )}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setClearOfferDialogOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleDeleteOffer} autoFocus>
-            Confirmar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       <Stack direction="row" spacing={2}>
         <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>
@@ -366,52 +363,59 @@ export function GenericCRUDPage({
           </IconButton>
         </Tooltip>
         <Tooltip title="Cancelar" arrow>
-          <IconButton
-            onClick={handleDataGridCancelChanges}
-            disabled={!hasChanges}
-          >
-            <Cancel />
-          </IconButton>
+          <span style={{ display: "inline-flex" }}>
+            <IconButton
+              onClick={handleDataGridCancelChanges}
+              disabled={!hasChanges}
+            >
+              <Cancel />
+            </IconButton>
+          </span>
         </Tooltip>
         <Tooltip title="Guardar cambios" arrow>
-          <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
-            <Save />
-          </IconButton>
+          <span style={{ display: "inline-flex" }}>
+            <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
+              <Save />
+            </IconButton>
+          </span>
         </Tooltip>
-
         {isClientPage && (
           <Tooltip title="Restaurar Contraseña" arrow>
-            <IconButton
-              onClick={() => setRestPwdDialogOpen(true)}
-              disabled={getSelectedCount(selectionModel) !== 1}
-            >
-              <LockReset />
-            </IconButton>
+            <span style={{ display: "inline-flex" }}>
+              <IconButton
+                onClick={() => setRestPwdDialogOpen(true)}
+                disabled={getSelectedCount(selectionModel) !== 1}
+              >
+                <LockReset />
+              </IconButton>
+            </span>
           </Tooltip>
         )}
-
         {isProductPage && (
           <>
             {productHasOffer ? (
               <Tooltip title="Eliminar oferta" arrow>
-                <IconButton
-                  onClick={() => setClearOfferDialogOpen(true)}
-                  disabled={getSelectedCount(selectionModel) !== 1}
-                >
-                  <Delete />
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    onClick={() => setClearOfferDialogOpen(true)}
+                    disabled={getSelectedCount(selectionModel) !== 1}
+                  >
+                    <Delete />
+                  </IconButton>
+                </span>
               </Tooltip>
             ) : (
               <Tooltip title="Añadir oferta" arrow>
-                <IconButton
-                  onClick={handleOpenOfferDialog}
-                  disabled={getSelectedCount(selectionModel) !== 1}
-                >
-                  <LocalOffer />
-                </IconButton>
+                <span style={{ display: "inline-flex" }}>
+                  <IconButton
+                    onClick={handleOpenOfferDialog}
+                    disabled={getSelectedCount(selectionModel) !== 1}
+                  >
+                    <LocalOffer />
+                  </IconButton>
+                </span>
               </Tooltip>
             )}
-
             <FormControl sx={{ minWidth: 200 }} size="small">
               <InputLabel>Filtrar ofertas:</InputLabel>
               <Select
@@ -426,8 +430,31 @@ export function GenericCRUDPage({
             </FormControl>
           </>
         )}
+        {isAdminPage && (
+          <>
+            <Tooltip title="Restablecer contraseña" arrow>
+              <span style={{ display: "inline-flex" }}>
+                <IconButton
+                  onClick={() => setAdminPwdDialogOpen(true)}
+                  disabled={getSelectedCount(selectionModel) !== 1}
+                >
+                  <LockReset />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Eliminar Administrador" arrow>
+              <span style={{ display: "inline-flex" }}>
+                <IconButton
+                  onClick={() => setHardDeleteAdminDialogOpen(true)}
+                  disabled={getSelectedCount(selectionModel) !== 1}
+                >
+                  <DeleteForever />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </>
+        )}
       </Stack>
-
       <Stack direction="row" spacing={2}>
         <Searchbox setSearch={setSearch} />
         <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
@@ -481,7 +508,6 @@ export function GenericCRUDPage({
           selectionModel={selectionModel}
           onSelectionChange={onSelectionChange}
         />
-
         <Snackbar
           open={snack.open || !!error}
           autoHideDuration={6000}
@@ -503,8 +529,122 @@ export function GenericCRUDPage({
         </Snackbar>
       </Box>
 
+      <Dialog
+        open={isRestPwdDialogOpen}
+        keepMounted
+        disablePortal
+        onClose={(e, reason) => {
+          if (reason === "backdropClick" || reason === "escapeKeyDown") return;
+          setRestPwdDialogOpen(false);
+        }}
+      >
+        <DialogTitle>Restaurar contraseña</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {selectedRowName ? (
+              <>
+                Vas a restaurar la contraseña de{" "}
+                <strong>{selectedRowName}</strong>.
+              </>
+            ) : (
+              'Al hacer click en confirmar, el cliente volverá a tener como contraseña el "identiftri" inicial.'
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRestPwdDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={handleResetPassword} autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={isClearOfferDialogOpen}
+        keepMounted
+        disablePortal
+        onClose={(e, reason) => {
+          if (reason === "backdropClick" || reason === "escapeKeyDown") return;
+          setClearOfferDialogOpen(false);
+        }}
+      >
+        <DialogTitle>Eliminar oferta</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {selectedRowName ? (
+              <>
+                Se eliminará la oferta del producto{" "}
+                <strong>{selectedRowName}</strong>.
+              </>
+            ) : (
+              "Se eliminará la oferta del producto seleccionado."
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearOfferDialogOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleDeleteOffer} autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <AdminPasswordDialog
+        open={isSetAdminPwdDialogOpen}
+        onClose={() => setAdminPwdDialogOpen(false)}
+        onSubmit={handleSubmitAdminPassword}
+        selectedName={selectedRowName}
+      />
+
+      <Dialog
+        open={isHardDeleteAdminDialogOpen}
+        keepMounted
+        disablePortal
+        onClose={(e, reason) => {
+          if (reason === "backdropClick" || reason === "escapeKeyDown") return;
+          setHardDeleteAdminDialogOpen(false);
+        }}
+      >
+        <DialogTitle>Eliminar administrador</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {selectedRowName ? (
+              <>
+                Vas a eliminar definitivamente a{" "}
+                <strong>{selectedRowName}</strong>.
+              </>
+            ) : (
+              "Vas a eliminar definitivamente al usuario seleccionado."
+            )}
+          </DialogContentText>
+          <DialogContentText sx={{ mt: 1 }}>
+            Esta acción no se puede deshacer. Si es el último SUPERADMIN, será
+            bloqueado por el servidor.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHardDeleteAdminDialogOpen(false)}>
+            Cancelar
+          </Button>
+          <Button color="error" onClick={handleHardDeleteAdmin} autoFocus>
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
-        <Dialog onClose={handleCloseOfferDialog} open={isOfferDialogOpen}>
+        <Dialog
+          open={isOfferDialogOpen}
+          keepMounted
+          disablePortal
+          onClose={(e, reason) => {
+            if (reason === "backdropClick" || reason === "escapeKeyDown")
+              return;
+            handleCloseOfferDialog();
+          }}
+        >
           <DialogTitle>Establecer oferta</DialogTitle>
           <DialogContent>
             <Typography color="textSecondary">

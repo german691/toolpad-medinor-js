@@ -56,12 +56,21 @@ export const updateAdminById = async (id, data) => {
   }
 };
 
-export const restoreAdminPassword = async (data) => {
+export const resetAdminPassword = async (adminId, newPassword) => {
   try {
-    const response = await api.post("/admin/restore-password", {
-      id: data,
+    const response = await api.put(`/admin/${adminId}/reset`, {
+      newPassword,
     });
-    return response;
+    return response.data;
+  } catch (error) {
+    handleServiceError(error);
+  }
+};
+
+export const hardDeleteAdmin = async (adminId) => {
+  try {
+    const response = await api.delete(`/admin/${adminId}/hard`);
+    return response.data;
   } catch (error) {
     handleServiceError(error);
   }

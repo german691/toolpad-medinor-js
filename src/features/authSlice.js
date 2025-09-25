@@ -1,69 +1,67 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const token = localStorage.getItem("jwtToken");
-const role = localStorage.getItem("userRole");
+const saved = JSON.parse(localStorage.getItem("auth") || "null");
 
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    token: token || null,
-    user: null,
-    userRole: role || null,
-    isAuthenticated: !!token,
+    token: saved?.token ?? null,
+    user: saved?.user ?? null,
+    isAuthenticated: !!saved?.token,
     status: "idle",
     error: null,
   },
   reducers: {
-    setCredentials: (state, action) => {
-      const { user, token, role } = action.payload;
-      state.token = token;
-      state.user = user;
-      state.userRole = role;
-      state.isAuthenticated = true;
-      localStorage.setItem("jwtToken", token);
-      localStorage.setItem("userRole", role);
-    },
-    logout: (state) => {
-      state.token = null;
-      state.user = null;
-      state.userRole = null;
-      state.isAuthenticated = false;
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("userRole");
-    },
     loginStart: (state) => {
       state.status = "loading";
       state.error = null;
     },
     loginSuccess: (state, action) => {
-      const { token, user, role } = action.payload;
+      const { token, username, role, fullName } = action.payload;
       state.status = "succeeded";
       state.token = token;
-      state.user = user;
-      state.userRole = role;
+      state.user = { username, role, fullName };
       state.isAuthenticated = true;
-      localStorage.setItem("jwtToken", token);
-      localStorage.setItem("userRole", role);
+      localStorage.setItem(
+        "auth",
+        JSON.stringify({ token, user: { username, role, fullName } })
+      );
     },
     loginFailed: (state, action) => {
       state.status = "failed";
       state.error = action.payload;
       state.token = null;
       state.user = null;
-      state.userRole = null;
       state.isAuthenticated = false;
-      localStorage.removeItem("jwtToken");
-      localStorage.removeItem("userRole");
+      localStorage.removeItem("auth");
+    },
+    setCredentials: (state, action) => {
+      const { token, username, role, fullName } = action.payload;
+      state.token = token;
+      state.user = { username, role, fullName };
+      state.isAuthenticated = true;
+      localStorage.setItem(
+        "auth",
+        JSON.stringify({ token, user: { username, role, fullName } })
+      );
+    },
+    logout: (state) => {
+      state.token = null;
+      state.user = null;
+      state.isAuthenticated = false;
+      localStorage.removeItem("auth");
     },
   },
 });
 
-export const { setCredentials, logout, loginStart, loginSuccess, loginFailed } =
+export const { loginStart, loginSuccess, loginFailed, setCredentials, logout } =
   authSlice.actions;
 
 export default authSlice.reducer;
 
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectCurrentUser = (state) => state.auth.user;
 export const selectCurrentToken = (state) => state.auth.token;
-export const selectCurrentUserRole = (state) => state.auth.userRole;
+export const selectCurrentUser = (state) => state.auth.user;
+export const selectCurrentUserRole = (state) => state.auth.user?.role ?? null;
+export const selectUsername = (state) => state.auth.user?.username ?? null;
+export const selectFullName = (state) => state.auth.user?.fullName ?? null;
