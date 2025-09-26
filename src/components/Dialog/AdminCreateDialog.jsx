@@ -18,9 +18,9 @@ import {
   MenuItem,
   FormHelperText,
 } from "@mui/material";
-import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
 import { z } from "zod";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 const DEFAULT_ROLES = ["admin", "superadmin", "images"];
 
@@ -136,7 +136,7 @@ export default function AdminCreateDialog({
           title="Creá administradores internos del sistema. Asegúrate de asignar el rol correcto y usar una contraseña segura."
           arrow
         >
-          <Info color="action" fontSize="medium" />
+          <IconInfoCircle color="action" fontSize="medium" />
         </Tooltip>
       </DialogTitle>
 

@@ -23,18 +23,6 @@ import {
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useCRUD } from "../../hooks/context/useCRUD";
-import {
-  Add,
-  Cancel,
-  Delete,
-  DeleteForever,
-  Fullscreen,
-  FullscreenExit,
-  LocalOffer,
-  LockReset,
-  Refresh,
-  Save,
-} from "@mui/icons-material";
 import { GenericDataGrid } from "../Table/GenericDataGrid";
 import Searchbox from "../UI/Searchbox";
 import { restoreClientPassword } from "../../services/clientService";
@@ -52,6 +40,19 @@ import {
 } from "../../services/adminService";
 import { z } from "zod";
 import AdminPasswordDialog from "../Dialog/AdminPasswordDialog";
+import {
+  IconBasketDiscount,
+  IconCancel,
+  IconDeviceFloppy,
+  IconDiscount,
+  IconDiscountOff,
+  IconLockQuestion,
+  IconPlus,
+  IconRefresh,
+  IconUsersMinus,
+  IconWindowMaximize,
+  IconWindowMinimize,
+} from "@tabler/icons-react";
 
 const toStartOfDayISO = (d) => dayjs(d).startOf("day").toISOString();
 const toEndOfDayISO = (d) => dayjs(d).endOf("day").toISOString();
@@ -116,9 +117,6 @@ export function GenericCRUDPage({
   const [isSetAdminPwdDialogOpen, setAdminPwdDialogOpen] = useState(false);
   const [isHardDeleteAdminDialogOpen, setHardDeleteAdminDialogOpen] =
     useState(false);
-  const [newAdminPassword, setNewAdminPassword] = useState("");
-  const [confirmAdminPassword, setConfirmAdminPassword] = useState("");
-  const [formErrors, setFormErrors] = useState({});
   const [isClearOfferDialogOpen, setClearOfferDialogOpen] = useState(false);
   const [hasOfferFilter, setOfferFilter] = useState("any");
   const [isOfferDialogOpen, setOfferDialogOpen] = useState(false);
@@ -354,12 +352,12 @@ export function GenericCRUDPage({
       <Stack direction="row" spacing={2}>
         <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>
-            <Refresh />
+            <IconRefresh />
           </IconButton>
         </Tooltip>
         <Tooltip title="Pantalla completa" arrow>
           <IconButton onClick={handleToggleFullScreen}>
-            {isFullScreen ? <FullscreenExit /> : <Fullscreen />}
+            {isFullScreen ? <IconWindowMinimize /> : <IconWindowMaximize />}
           </IconButton>
         </Tooltip>
         <Tooltip title="Cancelar" arrow>
@@ -368,14 +366,14 @@ export function GenericCRUDPage({
               onClick={handleDataGridCancelChanges}
               disabled={!hasChanges}
             >
-              <Cancel />
+              <IconCancel />
             </IconButton>
           </span>
         </Tooltip>
         <Tooltip title="Guardar cambios" arrow>
           <span style={{ display: "inline-flex" }}>
             <IconButton onClick={handleSaveWrapper} disabled={!hasChanges}>
-              <Save />
+              <IconDeviceFloppy />
             </IconButton>
           </span>
         </Tooltip>
@@ -386,7 +384,7 @@ export function GenericCRUDPage({
                 onClick={() => setRestPwdDialogOpen(true)}
                 disabled={getSelectedCount(selectionModel) !== 1}
               >
-                <LockReset />
+                <IconLockQuestion />
               </IconButton>
             </span>
           </Tooltip>
@@ -400,7 +398,7 @@ export function GenericCRUDPage({
                     onClick={() => setClearOfferDialogOpen(true)}
                     disabled={getSelectedCount(selectionModel) !== 1}
                   >
-                    <Delete />
+                    <IconDiscountOff />
                   </IconButton>
                 </span>
               </Tooltip>
@@ -411,7 +409,7 @@ export function GenericCRUDPage({
                     onClick={handleOpenOfferDialog}
                     disabled={getSelectedCount(selectionModel) !== 1}
                   >
-                    <LocalOffer />
+                    <IconBasketDiscount />
                   </IconButton>
                 </span>
               </Tooltip>
@@ -438,7 +436,7 @@ export function GenericCRUDPage({
                   onClick={() => setAdminPwdDialogOpen(true)}
                   disabled={getSelectedCount(selectionModel) !== 1}
                 >
-                  <LockReset />
+                  <IconLockQuestion />
                 </IconButton>
               </span>
             </Tooltip>
@@ -448,7 +446,7 @@ export function GenericCRUDPage({
                   onClick={() => setHardDeleteAdminDialogOpen(true)}
                   disabled={getSelectedCount(selectionModel) !== 1}
                 >
-                  <DeleteForever />
+                  <IconUsersMinus />
                 </IconButton>
               </span>
             </Tooltip>
@@ -457,7 +455,7 @@ export function GenericCRUDPage({
       </Stack>
       <Stack direction="row" spacing={2}>
         <Searchbox setSearch={setSearch} />
-        <Button variant="contained" startIcon={<Add />} onClick={onAdd}>
+        <Button variant="contained" startIcon={<IconPlus />} onClick={onAdd}>
           Crear {entityName}
         </Button>
       </Stack>

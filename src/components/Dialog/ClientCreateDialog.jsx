@@ -13,9 +13,9 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
 import { z } from "zod";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 const initialFormState = {
   cod_client: "",
@@ -148,7 +148,7 @@ export default function ClientCreateDialog({ open, onClose, onSave }) {
           title="Los clientes creados aquí deben existir en Tango si necesitás integración. Usá este panel para altas individuales."
           arrow
         >
-          <Info color="action" fontSize="medium" />
+          <IconInfoCircle color="action" fontSize="medium" />
         </Tooltip>
       </DialogTitle>
 

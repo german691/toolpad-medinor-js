@@ -17,9 +17,10 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { AddCircle, CloudUpload, Save } from "@mui/icons-material";
+import { CloudUpload } from "@mui/icons-material";
 import { uploadImagesByCode } from "../../services/imageService";
 import { createProductsByCode } from "../../services/productService";
+import { IconCirclePlus, IconDeviceFloppy } from "@tabler/icons-react";
 
 /** ---------- Utils ---------- */
 
@@ -466,7 +467,7 @@ export default function UploadByCodeDialog({
                 onClick={handleCreateMissingProds}
                 variant="outlined"
                 disableElevation
-                startIcon={<AddCircle />}
+                startIcon={<IconCirclePlus />}
                 disabled={!canCreateAndReupload}
               >
                 {creatingMissing || reUploading
@@ -477,7 +478,7 @@ export default function UploadByCodeDialog({
                 onClick={handleExportCsv}
                 variant="outlined"
                 disableElevation
-                startIcon={<Save />}
+                startIcon={<IconDeviceFloppy />}
                 disabled={isBusy}
               >
                 Exportar CSV

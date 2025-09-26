@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Typography, Box, Skeleton, Avatar, Paper, Stack } from "@mui/material";
-import ImageIcon from "@mui/icons-material/Image";
 import { getProductImages } from "../../services/imageService";
+import { IconPhoto } from "@tabler/icons-react";
 
 const formatCurrency = (value) =>
   `$ ${value.toLocaleString("es-AR", {
@@ -61,7 +61,7 @@ export default function OrderItem({ item }) {
               borderColor: "divider",
             }}
           >
-            <ImageIcon color="disabled" />
+            <IconPhoto color="disabled" />
           </Avatar>
         )}
 

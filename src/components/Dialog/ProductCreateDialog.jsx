@@ -17,11 +17,11 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { Info } from "@mui/icons-material";
 import PropTypes from "prop-types";
 import { z } from "zod";
 import getLabs from "../../services/labService";
 import getCategories from "../../services/categoryService";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 const productSchema = z.object({
   code: z
@@ -203,7 +203,7 @@ export default function ProductCreateDialog({ open, onClose, onSave }) {
           title="Sé cuidadoso: Los productos creados no figurarán en Tango Gestión. Usá este panel para altas individuales."
           arrow
         >
-          <Info color="action" fontSize="medium" />
+          <IconInfoCircle color="action" fontSize="medium" />
         </Tooltip>
       </DialogTitle>
 

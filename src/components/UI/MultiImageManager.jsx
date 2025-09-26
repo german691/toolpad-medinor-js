@@ -19,6 +19,11 @@ import {
   Close,
 } from "@mui/icons-material";
 import CroppingDialog from "./CroppingDialog";
+import {
+  IconHighlightOff,
+  IconPhotoFilled,
+  IconPhotoPlus,
+} from "@tabler/icons-react";
 
 export default function MultiImageManager({
   selectedProduct,
@@ -171,7 +176,9 @@ export default function MultiImageManager({
         {allImages.length === 0 ? (
           <Box {...getRootProps()} sx={dropzoneStyles}>
             <input {...getInputProps()} />
-            <AddPhotoAlternate sx={{ fontSize: 48, mb: 1 }} />
+            <Box sx={{ p: 1 }}>
+              <IconPhotoFilled size="48" />
+            </Box>
             <Typography>Arrastre imágenes o haga clic para agregar</Typography>
           </Box>
         ) : (
@@ -251,7 +258,7 @@ export default function MultiImageManager({
                 }}
               >
                 <input {...getInputProps()} />
-                <AddPhotoAlternate />
+                <IconPhotoFilled />
                 <Typography variant="caption">Añadir más</Typography>
               </Box>
             </Box>
@@ -280,7 +287,7 @@ export default function MultiImageManager({
           fullWidth
           variant="outlined"
           color="warning"
-          startIcon={<HighlightOff />}
+          startIcon={<IconHighlightOff />}
           disabled={newImages.length === 0 || isUploading}
         >
           Limpiar Nuevas
