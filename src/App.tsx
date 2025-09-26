@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Outlet } from "react-router";
 import { ReactRouterAppProvider } from "@toolpad/core/react-router";
-import type { Navigation } from "@toolpad/core/AppProvider";
+import { AppProvider, type Navigation } from "@toolpad/core/AppProvider";
 import {
   Person,
   PeopleAlt,
@@ -143,8 +143,8 @@ export default function App() {
   );
 
   return (
-    <ReactRouterAppProvider navigation={navigation as Navigation} branding={BRANDING}>
+    <AppProvider navigation={navigation as Navigation} branding={BRANDING}>
       <Outlet />
-    </ReactRouterAppProvider>
+    </AppProvider>
   );
 }

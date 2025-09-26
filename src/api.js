@@ -11,15 +11,14 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("jwtToken");
+    const saved = JSON.parse(localStorage.getItem("auth") || "null");
+    const token = saved?.token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export const handleServiceError = (error) => {

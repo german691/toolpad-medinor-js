@@ -1,41 +1,32 @@
 import * as React from "react";
 import { Outlet, useNavigate } from "react-router";
-import { DashboardLayout, ThemeSwitcher } from "@toolpad/core/DashboardLayout";
+import {
+  DashboardLayout,
+  SidebarFooterProps,
+  ThemeSwitcher,
+} from "@toolpad/core/DashboardLayout";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import {
-  Button,
   Chip,
+  Divider,
   IconButton,
   ListItemIcon,
   ListItemText,
   Stack,
+  Typography,
 } from "@mui/material";
 import { Logout, Settings } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 
-import {
-  logout,
-  selectCurrentUser,
-} from "../features/authSlice";
+import { logout, selectCurrentUser } from "../features/authSlice";
+import { Box } from "@mui/system";
 
-function TopMenu() {
+function BottomMenu({ mini }: SidebarFooterProps) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const user = useSelector(selectCurrentUser);
-  console.log(user)
-
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -43,28 +34,46 @@ function TopMenu() {
   };
 
   return (
-    <Stack direction={"row"} spacing={2} alignItems="center">
-      <Chip label={`${user?.username} (${user?.role})`} />
-      <ThemeSwitcher />
-
-      <IconButton onClick={handleClick}>
-        <Settings />
-      </IconButton>
-      <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-        <MenuItem onClick={handleLogout}>
-          <ListItemIcon>
-            <Logout fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Cerrar Sesión</ListItemText>
-        </MenuItem>
-      </Menu>
-    </Stack>
+    <Box sx={{ height: "fit" }}>
+      {!mini && (
+        <>
+          <Divider />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              m: 2,
+            }}
+          >
+            <Stack>
+              <Stack direction={"row"}>
+                <Typography variant="body1" fontWeight={700}>
+                  {user?.username}
+                </Typography>
+                <Chip size="small" label={`${user?.role}`} sx={{ ml: 1 }} />
+              </Stack>
+              <Typography variant="body2" color="gray">
+                {user?.fullName}
+              </Typography>
+            </Stack>
+            <Box>
+              <IconButton onClick={handleLogout}>
+                <Logout fontSize="medium" />
+              </IconButton>
+            </Box>
+          </Box>
+        </>
+      )}
+    </Box>
   );
 }
 
 export default function Layout() {
   return (
-    <DashboardLayout slots={{ toolbarActions: TopMenu, }}>
+    <DashboardLayout
+      slots={{ toolbarActions: ThemeSwitcher, sidebarFooter: BottomMenu }}
+    >
       <Outlet />
     </DashboardLayout>
   );

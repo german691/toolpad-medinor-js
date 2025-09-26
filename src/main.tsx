@@ -50,43 +50,44 @@ const router = createBrowserRouter(
               element: <Layout />,
               children: [
                 {
-                  index: true, element: <Navigate to="home" replace />
+                  index: true,
+                  element: <Navigate to="home" replace />,
                 },
                 {
                   path: "home",
-                  children: [{ index: true, element: <HomePage /> }]
+                  children: [{ index: true, element: <HomePage /> }],
                 },
                 {
                   path: "clients/crud",
-                  children: [{ index: true, Component: clientsWrapper }]
+                  children: [{ index: true, Component: clientsWrapper }],
                 },
                 {
                   path: "products/crud",
-                  children: [{ index: true, Component: ProductsWrapper }]
+                  children: [{ index: true, Component: ProductsWrapper }],
                 },
                 {
                   path: "products/images",
-                  children: [{ index: true, Component: ProductsImageWrapper }]
+                  children: [{ index: true, Component: ProductsImageWrapper }],
                 },
                 {
                   path: "clients/migration",
-                  children: [{ index: true, Component: ClientMigrationPage }]
+                  children: [{ index: true, Component: ClientMigrationPage }],
                 },
                 {
                   path: "products/migration",
-                  children: [{ index: true, Component: ProductMigrationPage }]
+                  children: [{ index: true, Component: ProductMigrationPage }],
                 },
                 {
                   path: "orders/manage",
-                  children: [{ index: true, Component: OrdersPageWrapper }]
+                  children: [{ index: true, Component: OrdersPageWrapper }],
                 },
                 {
                   path: "orders/manage/:orderId",
-                  children: [{ index: true, Component: OrderDetailsPage }]
+                  children: [{ index: true, Component: OrderDetailsPage }],
                 },
                 {
                   path: "admins/manage",
-                  children: [{ index: true, Component: AdminsPageWrapper }]
+                  children: [{ index: true, Component: AdminsPageWrapper }],
                 },
               ],
             },

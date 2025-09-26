@@ -174,11 +174,6 @@ export function ImagesPage() {
     if (!selectedProduct) return;
 
     const imageToDelete = existingImages.find((img) => img._id === imageId);
-    console.log({
-      selected: selectedProduct,
-      selected_id: selectedProduct._id,
-      imageId: imageId,
-    });
 
     setConfirmDialog({
       open: true,

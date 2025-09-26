@@ -49,9 +49,7 @@ export function AdminsPage() {
 
   const handleSaveAdmin = async (adminData) => {
     try {
-      console.log("creating", adminData);
-      const response = await createNewAdmin(adminData);
-      console.log(response);
+      await createNewAdmin(adminData);
       fetchItems();
     } catch (error) {
       throw error;
