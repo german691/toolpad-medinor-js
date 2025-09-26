@@ -22,7 +22,6 @@ import {
   Tooltip,
 } from "@mui/material";
 import Searchbox from "../components/UI/Searchbox";
-import { AddPhotoAlternate, Refresh } from "@mui/icons-material";
 import MultiImageManager from "../components/UI/MultiImageManager";
 import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
 import {
@@ -33,6 +32,7 @@ import {
 } from "../services/imageService";
 import UploadByCodeDialog from "../components/Dialog/UploadByCodeDialog";
 import { esES } from "@mui/x-data-grid/locales";
+import { IconPhotoPlus, IconRefresh } from "@tabler/icons-react";
 
 export default function ProductsImageWrapper() {
   return (
@@ -342,12 +342,12 @@ export function ImagesPage() {
         </FormControl>
         <Tooltip title="Actualizar" arrow>
           <IconButton onClick={handleRefresh}>
-            <Refresh />
+            <IconRefresh />
           </IconButton>
         </Tooltip>
         <Tooltip title="Añadir imágenes por código de producto" arrow>
           <IconButton onClick={() => setIsUploadByCodeDialogOpen(true)}>
-            <AddPhotoAlternate />
+            <IconPhotoPlus />
           </IconButton>
         </Tooltip>
       </Stack>

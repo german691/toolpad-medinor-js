@@ -17,7 +17,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { CloudUpload } from "@mui/icons-material";
+import { IconCloudUpload } from "@tabler/icons-react";
 import { uploadImagesByCode } from "../../services/imageService";
 import { createProductsByCode } from "../../services/productService";
 import { IconCirclePlus, IconDeviceFloppy } from "@tabler/icons-react";
@@ -337,7 +337,7 @@ export default function UploadByCodeDialog({
                   }}
                 >
                   <input {...getInputProps()} />
-                  <CloudUpload sx={{ fontSize: 48, color: "text.secondary" }} />
+                  <IconCloudUpload size={48} sx={{ color: "text.secondary" }} />
                   <Typography>
                     {isDragActive
                       ? "Suelta las imágenes aquí..."

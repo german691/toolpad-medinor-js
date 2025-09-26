@@ -455,8 +455,12 @@ export function GenericCRUDPage({
       </Stack>
       <Stack direction="row" spacing={2}>
         <Searchbox setSearch={setSearch} />
-        <Button variant="contained" startIcon={<IconPlus />} onClick={onAdd}>
-          Crear {entityName}
+        <Button
+          variant="contained"
+          startIcon={<IconPlus size={24} />}
+          onClick={onAdd}
+        >
+          {entityName}
         </Button>
       </Stack>
     </Box>

@@ -11,18 +11,13 @@ import {
   DialogContent,
 } from "@mui/material";
 import { useDropzone } from "react-dropzone";
-import {
-  AddPhotoAlternate,
-  CloudUpload,
-  Delete,
-  HighlightOff,
-  Close,
-} from "@mui/icons-material";
+import { IconCloudUpload } from "@tabler/icons-react";
 import CroppingDialog from "./CroppingDialog";
 import {
   IconHighlightOff,
   IconPhotoFilled,
-  IconPhotoPlus,
+  IconTrash,
+  IconX,
 } from "@tabler/icons-react";
 
 export default function MultiImageManager({
@@ -242,7 +237,7 @@ export default function MultiImageManager({
                       "&:hover": { bgcolor: "white" },
                     }}
                   >
-                    <Delete fontSize="small" />
+                    <IconTrash size={24} />
                   </IconButton>
                 </Box>
               ))}
@@ -275,7 +270,7 @@ export default function MultiImageManager({
             isUploading ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              <CloudUpload />
+              <IconCloudUpload />
             )
           }
           disabled={newImages.length === 0 || isUploading}
@@ -297,7 +292,7 @@ export default function MultiImageManager({
           fullWidth
           variant="outlined"
           color="error"
-          startIcon={<Delete />}
+          startIcon={<IconTrash />}
           disabled={allImages.length === 0 || isUploading}
         >
           Borrar Todo
@@ -325,7 +320,7 @@ export default function MultiImageManager({
             }}
             onClick={() => setFullScreenImage(null)}
           >
-            <Close />
+            <IconX />
           </IconButton>
         </DialogContent>
       </Dialog>

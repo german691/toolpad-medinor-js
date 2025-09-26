@@ -16,15 +16,14 @@ import {
   IconButton,
   FormControlLabel,
   Checkbox,
-  Chip,
   Stack,
   FormGroup,
   Paper,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
 import { DataGrid } from "@mui/x-data-grid";
 import { useClientMigrationContext } from "../../hooks/context/clientMigrationProvider.jsx";
 import { esES } from "@mui/x-data-grid/locales";
+import { IconX } from "@tabler/icons-react";
 
 const mainColumns = [
   { field: "COD_CLIENT", headerName: "Cód. Cliente", width: 150 },
@@ -433,7 +432,7 @@ export default function ClientMigrationDataGrid() {
                 onClick={handleCloseErrorModal}
                 sx={{ position: "absolute", right: 8, top: 8 }}
               >
-                <CloseIcon />
+                <IconX />
               </IconButton>
             </DialogTitle>
             <DialogContent>
@@ -471,7 +470,7 @@ export default function ClientMigrationDataGrid() {
                 onClick={handleCloseConflictModal}
                 sx={{ position: "absolute", right: 8, top: 8 }}
               >
-                <CloseIcon />
+                <IconX />
               </IconButton>
             </DialogTitle>
             <DialogContent>

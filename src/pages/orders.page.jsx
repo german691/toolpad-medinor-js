@@ -13,13 +13,13 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { Refresh } from "@mui/icons-material";
 import Searchbox from "../components/UI/Searchbox";
 import { CustomNoRowsOverlay } from "../components/Table/GenericDataGrid";
 import { getOrders } from "../services/orderService";
 import { CRUDProvider, useCRUD } from "../hooks/context/useCRUD";
 import { useNavigate } from "react-router-dom";
 import { esES } from "@mui/x-data-grid/locales";
+import { IconRefresh } from "@tabler/icons-react";
 
 export default function OrdersPageWrapper() {
   return (
@@ -182,7 +182,7 @@ export function OrdersPage() {
           </FormControl>
           <Tooltip title="Actualizar" arrow>
             <IconButton onClick={handleRefresh}>
-              <Refresh />
+              <IconRefresh />
             </IconButton>
           </Tooltip>
         </Stack>

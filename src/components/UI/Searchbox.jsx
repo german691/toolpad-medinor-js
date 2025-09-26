@@ -1,4 +1,3 @@
-import { Search } from "@mui/icons-material";
 import {
   Box,
   FormControl,
@@ -7,6 +6,7 @@ import {
   InputLabel,
   OutlinedInput,
 } from "@mui/material";
+import { IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 
 export default function Searchbox({ setSearch, overrideWidth }) {
@@ -41,7 +41,7 @@ export default function Searchbox({ setSearch, overrideWidth }) {
           endAdornment={
             <InputAdornment position="end">
               <IconButton edge="end" onClick={handleSearch}>
-                <Search />
+                <IconSearch />
               </IconButton>
             </InputAdornment>
           }

@@ -25,10 +25,9 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { PageContainer } from "@toolpad/core";
 import { useParams, useNavigate } from "react-router-dom";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { getProductImages } from "../services/imageService";
 import { closeOrder, getOrderById } from "../services/orderService";
+import { IconArrowBackUp, IconReceiptDollarFilled } from "@tabler/icons-react";
 
 const formatCurrency = (value) => {
   if (value === null || typeof value === "undefined" || isNaN(value)) {
@@ -186,7 +185,7 @@ export default function OrderDetailsPage() {
       <PageContainer breadcrumbs={[]}>
         <Alert severity="error">{error || "Pedido no encontrado."}</Alert>
         <Button
-          startIcon={<ArrowBackIcon />}
+          startIcon={<IconArrowBackUp />}
           onClick={() => navigate("/orders/manage")}
           sx={{ mt: 2 }}
         >
@@ -279,9 +278,9 @@ export default function OrderDetailsPage() {
             onClick={() => navigate("/orders/manage")}
             aria-label="back"
           >
-            <ArrowBackIcon />
+            <IconArrowBackUp />
           </IconButton>
-          <ReceiptLongIcon fontSize="large" />
+          <IconReceiptDollarFilled size={48} />
           <Box>
             <Typography variant="h5" component="div">
               Detalle del Pedido Nº {order.orderNumber}

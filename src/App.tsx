@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Outlet } from "react-router";
-import { AppProvider, type Navigation } from "@toolpad/core/AppProvider";
-
+import { type Navigation } from "@toolpad/core/AppProvider";
+import { ReactRouterAppProvider } from '@toolpad/core/react-router';
 import {
   IconBasketDollar,
   IconHome,
@@ -16,14 +16,12 @@ import {
 import { useSelector } from "react-redux";
 import { selectCurrentUserRole } from "./features/authSlice";
 
-// --- Navegación con metadato de roles (prop extra que Toolpad ignora) ---
 const NAVIGATION_WITH_ROLES: Navigation & any = [
   { kind: "header", title: "Inicio" },
   {
     segment: "home",
     title: "Inicio",
     icon: <IconHome />,
-    // sin roles -> visible para cualquiera autenticado
   },
 
   { kind: "header", title: "Clientes" },
@@ -64,7 +62,7 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
 
   { kind: "header", title: "Pedidos" },
   {
-    segment: "orders/manage", // coincide con tu router
+    segment: "orders/manage",
     title: "Lista de Pedidos",
     icon: <IconBasketDollar />,
     roles: ["admin", "superadmin"],
@@ -79,11 +77,10 @@ const NAVIGATION_WITH_ROLES: Navigation & any = [
   },
 ];
 
-const BRANDING = { title: "Gestor Medinor" };
+const BRANDING = { title: "Medinor - Gestión", logo: "" };
 
-// --- Utilitario: filtra por rol y limpia headers vacíos ---
 function filterNavigationByRole(nav: any[], role?: string | null): any[] {
-  if (!role) return nav; // si aún no tenemos rol (p.ej. tras F5), no filtramos y ProtectedRoute valida
+  if (!role) return nav;
 
   const out: any[] = [];
   let pendingHeaderIndex: number | null = null;
@@ -99,7 +96,6 @@ function filterNavigationByRole(nav: any[], role?: string | null): any[] {
 
   for (const item of nav) {
     if (item.kind === "header") {
-      // cerramos el header previo si quedó vacío
       flushHeaderIfEmpty();
       out.push(item);
       pendingHeaderIndex = out.length - 1;
@@ -107,7 +103,6 @@ function filterNavigationByRole(nav: any[], role?: string | null): any[] {
       continue;
     }
 
-    // ítem con o sin children
     let include = true;
     let nextItem = item;
 
@@ -128,7 +123,6 @@ function filterNavigationByRole(nav: any[], role?: string | null): any[] {
     }
   }
 
-  // último header
   flushHeaderIfEmpty();
   return out;
 }
@@ -142,8 +136,8 @@ export default function App() {
   );
 
   return (
-    <AppProvider navigation={navigation as Navigation} branding={BRANDING}>
+    <ReactRouterAppProvider navigation={navigation as Navigation} branding={BRANDING}>
       <Outlet />
-    </AppProvider>
+    </ReactRouterAppProvider>
   );
 }

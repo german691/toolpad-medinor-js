@@ -5,22 +5,19 @@ import {
   SidebarFooterProps,
   ThemeSwitcher,
 } from "@toolpad/core/DashboardLayout";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import {
+  Button,
   Chip,
   Divider,
   IconButton,
-  ListItemIcon,
-  ListItemText,
   Stack,
   Typography,
 } from "@mui/material";
-import { Logout, Settings } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 
 import { logout, selectCurrentUser } from "../features/authSlice";
 import { Box } from "@mui/system";
+import { IconLogout } from "@tabler/icons-react";
 
 function BottomMenu({ mini }: SidebarFooterProps) {
   const dispatch = useDispatch();
@@ -34,12 +31,13 @@ function BottomMenu({ mini }: SidebarFooterProps) {
   };
 
   return (
-    <Box sx={{ height: "fit" }}>
-      {!mini && (
-        <>
+    <>
+      {!mini ? (
+        <Box sx={{ maxHeight: "fit" }}>
           <Divider />
           <Box
             sx={{
+              height: "fit",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -59,13 +57,32 @@ function BottomMenu({ mini }: SidebarFooterProps) {
             </Stack>
             <Box>
               <IconButton onClick={handleLogout}>
-                <Logout fontSize="medium" />
+                <IconLogout size={24} />
               </IconButton>
             </Box>
           </Box>
-        </>
-      )}
-    </Box>
+        </Box>
+      ) : (
+        <Box sx={{ position: "relative", minWidth: "84px", marginBottom: "8px" }}>
+          <Box>
+            <Box sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+              w: "full",
+              paddingInline: "8px",
+            }}>
+
+              <Button onClick={handleLogout} color="inherit" sx={{ width: "68px", height: "60px", borderRadius: "8px" }}>
+                <IconLogout size={24} />
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )
+      }
+    </>
   );
 }
 

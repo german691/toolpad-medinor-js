@@ -3,7 +3,6 @@ import { useSelector } from "react-redux";
 import { Link as RouterLink } from "react-router-dom";
 import {
   Box,
-  Grid,
   Card,
   CardActionArea,
   CardContent,
@@ -13,25 +12,26 @@ import {
   Divider,
 } from "@mui/material";
 
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
-import Inventory2Icon from "@mui/icons-material/Inventory2";
-import ScienceIcon from "@mui/icons-material/Science";
-import ImageIcon from "@mui/icons-material/Image";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-
 import {
   selectCurrentUser,
   selectCurrentUserRole,
 } from "../features/authSlice";
+import {
+  IconBasketDollar,
+  IconPackage,
+  IconPhotoUp,
+  IconShieldCog,
+  IconTableImport,
+  IconUserEdit,
+  IconUserUp,
+} from "@tabler/icons-react";
 
 const LINKS = [
   {
     title: "Clientes",
     description: "Gestioná el alta, edición y consulta de clientes.",
     to: "/clients/crud",
-    icon: <PeopleAltIcon fontSize="large" />,
+    icon: <IconUserEdit size={32} />,
     roles: ["admin", "superadmin"],
     tag: "ABM",
   },
@@ -39,7 +39,7 @@ const LINKS = [
     title: "Productos",
     description: "ABM de productos con filtros y edición.",
     to: "/products/crud",
-    icon: <Inventory2Icon fontSize="large" />,
+    icon: <IconPackage size={32} />,
     roles: ["admin", "superadmin"],
     tag: "ABM",
   },
@@ -47,7 +47,7 @@ const LINKS = [
     title: "Imágenes de productos",
     description: "Subí, ordená y eliminá imágenes principales y secundarias.",
     to: "/products/images",
-    icon: <ImageIcon fontSize="large" />,
+    icon: <IconPhotoUp size={32} />,
     roles: ["images", "admin", "superadmin"],
     tag: "Medios",
   },
@@ -55,7 +55,7 @@ const LINKS = [
     title: "Migración de clientes",
     description: "Importá clientes de fuentes externas de manera controlada.",
     to: "/clients/migration",
-    icon: <CloudUploadIcon fontSize="large" />,
+    icon: <IconUserUp size={32} />,
     roles: ["superadmin"],
     tag: "Migración",
   },
@@ -63,7 +63,7 @@ const LINKS = [
     title: "Migración de productos",
     description: "Importá y validá lotes de productos antes de publicar.",
     to: "/products/migration",
-    icon: <CloudUploadIcon fontSize="large" />,
+    icon: <IconTableImport size={32} />,
     roles: ["superadmin"],
     tag: "Migración",
   },
@@ -71,7 +71,7 @@ const LINKS = [
     title: "Gestión de pedidos",
     description: "Revisá, prepará y actualizá el estado de los pedidos.",
     to: "/orders/manage",
-    icon: <AssignmentIcon fontSize="large" />,
+    icon: <IconBasketDollar size={32} />,
     roles: ["admin", "superadmin"],
     tag: "Operación",
   },
@@ -79,7 +79,7 @@ const LINKS = [
     title: "Administradores",
     description: "Alta/baja, roles y estado de cuentas administrativas.",
     to: "/admins/manage",
-    icon: <AdminPanelSettingsIcon fontSize="large" />,
+    icon: <IconShieldCog size={32} />,
     roles: ["superadmin"],
     tag: "Seguridad",
   },
@@ -172,9 +172,9 @@ const HomePage = () => {
           display: "grid",
           gap: 2,
           gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
+            md: "1fr",
+            lg: "repeat(2, 1fr)",
+            xl: "repeat(3, 1fr)",
           },
         }}
       >

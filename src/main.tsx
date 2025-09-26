@@ -25,79 +25,85 @@ import OrderDetailsPage from "./pages/orderDetails.page";
 import AdminsPageWrapper from "./pages/admins.page";
 import HomePage from "./pages/home.page";
 
-const router = createBrowserRouter(
-  [
-    {
-      path: "/login",
-      Component: LoginPage,
-    },
-    {
-      path: "/unauthorized",
-      element: <UnauthorizedPage />,
-    },
-    {
-      path: "*",
-      element: <NotFoundPage />,
-    },
-    {
-      path: "/",
-      element: <App />,
-      children: [
-        {
-          element: <ProtectedRoute />,
-          children: [
-            {
-              element: <Layout />,
-              children: [
-                {
-                  index: true,
-                  element: <Navigate to="home" replace />,
-                },
-                {
-                  path: "home",
-                  children: [{ index: true, element: <HomePage /> }],
-                },
-                {
-                  path: "clients/crud",
-                  children: [{ index: true, Component: clientsWrapper }],
-                },
-                {
-                  path: "products/crud",
-                  children: [{ index: true, Component: ProductsWrapper }],
-                },
-                {
-                  path: "products/images",
-                  children: [{ index: true, Component: ProductsImageWrapper }],
-                },
-                {
-                  path: "clients/migration",
-                  children: [{ index: true, Component: ClientMigrationPage }],
-                },
-                {
-                  path: "products/migration",
-                  children: [{ index: true, Component: ProductMigrationPage }],
-                },
-                {
-                  path: "orders/manage",
-                  children: [{ index: true, Component: OrdersPageWrapper }],
-                },
-                {
-                  path: "orders/manage/:orderId",
-                  children: [{ index: true, Component: OrderDetailsPage }],
-                },
-                {
-                  path: "admins/manage",
-                  children: [{ index: true, Component: AdminsPageWrapper }],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  { basename: "/gestion" }
-);
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    Component: LoginPage,
+  },
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
+  {
+    path: "/",
+    element: <App />,
+    children: [
+      {
+        element: <ProtectedRoute allowedRoles={["superadmin", "admin", "images"]} />,
+        children: [
+          {
+            element: <Layout />,
+            children: [
+              { index: true, element: <Navigate to="home" replace /> },
+              { path: "home", element: <HomePage /> },
+
+              // superadmin y admin
+              {
+                path: "clients/crud",
+                element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+                children: [{ index: true, Component: clientsWrapper }],
+              },
+              {
+                path: "products/crud",
+                element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+                children: [{ index: true, Component: ProductsWrapper }],
+              },
+              {
+                path: "orders/manage",
+                element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+                children: [{ index: true, Component: OrdersPageWrapper }],
+              },
+              {
+                path: "orders/manage/:orderId",
+                element: <ProtectedRoute allowedRoles={["superadmin", "admin"]} />,
+                children: [{ index: true, Component: OrderDetailsPage }],
+              },
+
+              // superadmin
+              {
+                path: "clients/migration",
+                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
+                children: [{ index: true, Component: ClientMigrationPage }],
+              },
+              {
+                path: "products/migration",
+                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
+                children: [{ index: true, Component: ProductMigrationPage }],
+              },
+              {
+                path: "admins/manage",
+                element: <ProtectedRoute allowedRoles={["superadmin"]} />,
+                children: [{ index: true, Component: AdminsPageWrapper }],
+              },
+
+              // images
+              {
+                path: "products/images",
+                element: <ProtectedRoute allowedRoles={["superadmin", "admin", "images"]} />,
+                children: [{ index: true, Component: ProductsImageWrapper }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]);
+
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <Provider store={store}>

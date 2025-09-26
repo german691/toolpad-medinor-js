@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { Box, Typography, Chip, Stack } from "@mui/material";
 import { useDropzone } from "react-dropzone";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { IconCloudUpload } from "@tabler/icons-react";
 
 export default function CsvDropzone({ context }) {
   const { handleFileAccepted, isLoadingFile } = context();
@@ -71,7 +71,7 @@ export default function CsvDropzone({ context }) {
       })}
     >
       <input {...getInputProps()} />
-      <CloudUploadIcon sx={{ fontSize: 56 }} />
+      <IconCloudUpload size={56} />
       <Typography variant="h6">
         {isLoadingFile
           ? "Procesando archivo..."
