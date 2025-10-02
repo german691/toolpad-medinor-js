@@ -1,4 +1,4 @@
-import { api, API_BASE_URL, handleServiceError } from "../api";
+import { api, handleServiceError } from "../api";
 
 /**
  * Obtiene las imágenes existentes de un producto
@@ -8,7 +8,7 @@ export const getProductImages = async (productId) => {
     const response = await api.get(`/products/${productId}/images`);
     return response.data.images.map((img) => ({
       ...img,
-      url: `${API_BASE_URL}${img.url}`,
+      url: `${img.url}`,
     }));
   } catch (error) {
     handleServiceError(error);
