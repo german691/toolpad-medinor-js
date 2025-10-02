@@ -20,6 +20,8 @@ import {
   IconX,
 } from "@tabler/icons-react";
 
+export const API_FRONTEND_URL = import.meta.env.VITE_API_FRONTEND_URL;
+
 export default function MultiImageManager({
   selectedProduct,
   existingImages = [],
@@ -41,7 +43,7 @@ export default function MultiImageManager({
     const formattedExisting = existingImages.map((img) => ({
       ...img,
       id: img.id,
-      src: img.url,
+      src: `${API_FRONTEND_URL}/files/${img.url}`,
       isNew: false,
       role: img.isMain ? "Principal" : "Secundaria",
     }));
