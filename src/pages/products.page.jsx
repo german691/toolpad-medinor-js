@@ -19,7 +19,6 @@ import getCategories from "../services/categoryService";
 import ItemSelect from "../components/Select/ItemSelect";
 import { GenericCRUDPage } from "../components/Screen/GenericCRUDPage";
 import dayjs from "dayjs";
-import { ClearRounded, LocalOffer } from "@mui/icons-material";
 import { Box } from "@mui/system";
 import { formatDate } from "../func/formatDate";
 import { IconTagFilled, IconX } from "@tabler/icons-react";
@@ -97,7 +96,7 @@ export function ProductsPage() {
         header: "Laboratorio",
         minWidth: 100,
         type: "singleSelect",
-        valueOptions: labs,
+        valueOptions: () => labs,
         editable: true,
         renderEditCell: (params) => <ItemSelect {...params} options={labs} />,
         render: (params) => {
@@ -110,7 +109,7 @@ export function ProductsPage() {
         header: "Categorías",
         minWidth: 135,
         type: "singleSelect",
-        valueOptions: categories,
+        valueOptions: () => categories,
         editable: true,
         renderEditCell: (params) => (
           <ItemSelect {...params} options={categories} />
@@ -231,7 +230,7 @@ export function ProductsPage() {
         renderCell: ({ value, row }) => formatDate(value ?? row?.createdAt),
       },
     ],
-    [labs]
+    [labs, categories]
   );
 
   const handleAddProduct = () => {
